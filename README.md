@@ -1,4 +1,4 @@
-# ISSAC Intron splice sites aware cis-sQTL mapping 
+# ISSAC （Intron splice sites aware cis-sQTL mapping） 
 (the tools written in C++ and have been compiled for direct use)
 # tutorial
 # before use
