@@ -31,7 +31,7 @@ Examples of stat output
 Each column‘s meaning: 1) intron junction information 2) UMI count of the intron in the bam files
 Here, we use UMI counts to quantify intron junction reads to avoid PCR amplication bias
 
-After obtaining all the .junc and .stat file for each metacell, we perform intron cluster and site
+After obtaining all the .junc and .stat file for each metacell, we perform intron cluster and site quantification
 
 2)
 phenotype_group=phenotype_group
