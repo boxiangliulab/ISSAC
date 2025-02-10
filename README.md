@@ -73,12 +73,12 @@ use below file to obtain GRM matrix
 Examples of GRM file: Note: all the phenotypes and PCs’ names should be composed of ${sample}:${seq}; and ${sample} must exist in GRM file
 
 ISSAC=ISSAC
-$ISSAC model –s *.filtered \  ###phenotype
-       -p *.PC \   PC file
-       -g GRM.txt \   GRM file
-       -n 617 \  sample numbers of GRM file
-       -u ${model_pos} \ the position of all the model files 
-       -o  middle \ the output name
+$ISSAC model –s *.filtered   phenotype
+       -p *.PC    PC file
+       -g GRM.txt    GRM file
+       -n 617   sample numbers of GRM file
+       -u ${model_pos}  the position of all the model files 
+       -o  middle  the output name
 
 
 Note: ISSAC model will output all the splice site’s model containing in the phenotype file
@@ -95,13 +95,13 @@ After obtaining model files, then we could utilize bcf file to perform cis-sQTL 
 ISSAC QTL mapping:
 
 $ISSAC QTL 
-       -p $model_file_pos \  the model files position
-       -m  *.common\ the sample names of phenotype and PC  file
-       -c chr${i} \ the chromosome of splice sites
-       -x *.PC \  PC file
-       -v chr${i}.recode.bcf \ genotype file
-       -w 1000000 \ the windows within this range will be used to perform cis-sQTL mapping
-       -o $output_pos \  the output file’s position
+       -p $model_file_pos   the model files position
+       -m  *.common the sample names of phenotype and PC  file
+       -c chr${i}  the chromosome of splice sites
+       -x *.PC   PC file
+       -v chr${i}.recode.bcf  genotype file
+       -w 1000000  the windows within this range will be used to perform cis-sQTL mapping
+       -o $output_pos   the output file’s position
        -t 1  the sQTLs with pvalue less than this threshold will be output to result files
 
 Output of ISSAC QTL includes .result file and it will output results of all the splice sites in your desired chromosome of your .site file
