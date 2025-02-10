@@ -1,5 +1,5 @@
-<img width="1286" alt="image" src="https://github.com/user-attachments/assets/33d9eca5-d7ef-433c-9985-22545675e7ab" /># ISSAC
-Intron splice sites aware cis-sQTL mapping (the tools written in C++ and have been compiled for direct use)
+# ISSAC Intron splice sites aware cis-sQTL mapping 
+(the tools written in C++ and have been compiled for direct use)
 # tutorial
 # before use
 Several C++ libraries needed to be added to your conda environment firstly before entering ISSAC world
