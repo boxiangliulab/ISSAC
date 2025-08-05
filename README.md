@@ -1,4 +1,4 @@
-![image](https://github.com/tibettiger/ISSAC/blob/main/img/logo.png)
+![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/logo.png)
 # ISSAC （Integrative single-cell splicing analysis and QTL caller） 
 (the tools written in C++ and have been compiled for direct use)
 # tutorial
