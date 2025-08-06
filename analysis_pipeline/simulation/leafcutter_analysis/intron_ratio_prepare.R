@@ -16,14 +16,13 @@ for(i in 1:nrow(intron)){
         }
         ratio=as.numeric(intron[i,3:ncol(intron)])/total
         NA_num<-which(is.na(ratio))
-        if(length(NA_num)/length(ratio)<0.6){
         denominater<-as.numeric(intron[i,3:ncol(intron)])[-NA_num]
         tmp_middle=round(median(denominater))/round(median(total[-NA_num]))
         ratio[NA_num]<-tmp_middle
         tmp_intron<-as.data.frame(matrix(NA,1,ncol(intron)))
         tmp_intron[1,1:2]<-intron[i,1:2]
         tmp_intron[1,3:ncol(intron)]<-ratio
-        newintron<-rbind(newintron,tmp_intron)}
+        newintron<-rbind(newintron,tmp_intron)
     }
 }
 
