@@ -10,9 +10,9 @@ import pandas as pd
 import numpy as np
 from scIsoSim import scIsoSim
 
-INPUT_cells_barcode_file = "/home/e0950183/project/compare_splice_based_intron_based/simulated_data/intermediate_data/TH_MAH_H001.CD16+_NK.barcodes.tsv"
+INPUT_cells_barcode_file = "/home/e0950183/project/compare_splice_based_intron_based/simulated_data/intermediate_data/JP_RIK_H002.CD4+_T_naive.barcodes.tsv"
 filename = "10X_demo"
-INPUT_bamfile = "/home/e0950183/project/AIDA_phase2_cell/pseudobulk_bam/CD16+_NK/TH_MAH_H001.CD16+_NK.bam"
+INPUT_bamfile = "/data/projects/11003054/e0950183/compare_site_intron_based/JP_RIK_H002_CD4+_T_naive_simulation/tmp_scisosim/JP_RIK_H002.CD4+_T_naive.bam"
 samtools_directory="/home/e0950183/miniconda3/envs/my_java_env/bin" 
 bedtools_directory="/home/e0950183/miniconda3/envs/my_java_env/bin"
 seqtk_directory="/home/e0950183/miniconda3/envs/my_java_env/bin"
@@ -35,7 +35,7 @@ Utility.scRNA_CreateFeatureSets(INPUT_bamfile=INPUT_bamfile,
 
 gene_bedfile = outdirectory + "/" + "scReadSim.Gene.bed"
 
-filename="CD16+_NK"
+filename="CD4+_T_naive"
 
 UMI_gene_count_mat_filename = "%s.gene.countmatrix" % filename
 
@@ -58,7 +58,7 @@ referenceGenome_dir = "/home/e0950183/project/compare_splice_based_intron_based/
 referenceGenome_file = "%s/%s.fa" % (referenceGenome_dir, referenceGenome_name)
 
 ###Prepare trascriptome
-UMI_count_mat_filename = "CD16+_NK.gene.countmatrix"
+UMI_count_mat_filename = "CD4+_T_naive.gene.countmatrix"
 synthetic_cell_label_file = outdirectory+ "/" + UMI_count_mat_filename + ".scDesign2Simulated.CellTypeLabel.txt"
 OUTPUT_cells_barcode_file = "synthetic_cell_barcode.txt"
 scIsoSim.prepare_scIsoSim(outdirectory=outdirectory,
