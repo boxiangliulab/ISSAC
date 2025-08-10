@@ -1,6 +1,8 @@
-![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/figure1_v2.png)
 # ISSAC （Integrative single-cell splicing analysis and QTL caller） 
 (the tools written in C++ and have been compiled for direct use)
+
+![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/figure1_v2.png)
+
 # tutorial
 # before use
 Several C++ libraries needed to be added to your conda environment firstly before entering ISSAC world
