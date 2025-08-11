@@ -73,6 +73,18 @@ $ISSAC pheno_output $splice_read_count $out_file $prop_file $sd $na_prop
 The output of filter including two files:
 (1).filtered (2).prop
 
+## Sites located in single-intron clusters
+For those sites without competing junction reads, we could quantify nonsplit reads crossing the splice sites to check if intron retention events exist around the splice site.  
+ISSAC IR part provides the option for you to obtain nonsplit reads crossing the sites you are interested in.
+```
+bamfile=*.bam ###need original bam file with its corresponding index file
+barcode=*.barcode  ###need the cell barcode of the cells you wanted to include
+site=*.site  ###deposit the splice sites you are interested in
+output_file=*.nonsplit  ###output CB-UMI based nonsplit reads crossing the splice site
+
+$ISSAC IR extract -s FR -b ${barcode} -t ${site} ${bamfile} -o ${output_file}
+```
+
 ## model construction
 After obtaining phenotype(.filtered), GRM, genotype(.bcf &.csi),  .PC file, we could perform model construction for each splice site to estimate coefficients of fixed effect and random effect
 GRM preparation
