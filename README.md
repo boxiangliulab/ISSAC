@@ -29,24 +29,19 @@ ${ISSAC} juncstat ${barcode} ${output_file} ${output}`
 
 Examples of junctions output:
 ```
-chr1    6186734 6193054 JUNC00000065    4       -       6186816 6192929 255,0,0 2       82,125  0,6195  TATTACCCAGCCAATT        TGCTAGCGCT
-chr1    6186737 6193054 JUNC00000066    5       -       6186816 6192929 255,0,0 2       79,125  0,6192  ACCCACTGTAATAGCA        ACTGAAATTT
-chr1    6186743 6193007 JUNC00000069    2       -       6186816 6192929 255,0,0 2       73,78   0,6186  TATTACCCAGCCAATT        GTCATGTAAT
-chr1    6186743 6193041 JUNC00000067    3       -       6186816 6192929 255,0,0 2       73,112  0,6186  CGGGTCACAACGATGG        TTAGTTCCCT
-chr1    6186743 6193054 JUNC00000068    4       -       6186816 6192929 255,0,0 2       73,125  0,6186  CGGGTCACAACGATGG        TCGAGAGTAC
-chr1    6186745 6193009 JUNC00000070    1       -       6186816 6192929 255,0,0 2       71,80   0,6184  TATTACCCAGCCAATT        AAGGTACAAC
-chr1    6186751 6193019 JUNC00000071    3       -       6186816 6192929 255,0,0 2       65,90   0,6178  ACCCACTGTAATAGCA        GGGATTCAAT
-chr1    6186751 6193019 JUNC00000073    4       -       6186816 6192929 255,0,0 2       65,90   0,6178  CGGGTCACAACGATGG        GCGCAACAAT
-chr1    6186751 6193036 JUNC00000072    2       -       6186816 6192929 255,0,0 2       65,107  0,6178  ACCCACTGTAATAGCA        GGGAATCAGT
-chr1    6186754 6193018 JUNC00000075    1       -       6186816 6192929 255,0,0 2       62,89   0,6175  ACCCACTGTAATAGCA        ATCACCTTTT
-chr1    6186754 6193018 JUNC00000077    1       -       6186816 6192929 255,0,0 2       62,89   0,6175  TATTACCCAGCCAATT        TGCTATAACA
-chr1    6186754 6193046 JUNC00000074    5       -       6186816 6192929 255,0,0 2       62,117  0,6175  ACCCACTGTAATAGCA        TCATTTATAT
-chr1    6186754 6193046 JUNC00000076    3       -       6186816 6192929 255,0,0 2       62,117  0,6175  GCTGGGTTCGTTACAG        TGACCTACCG
-chr1    6186754 6193054 JUNC00000078    4       -       6186816 6192929 255,0,0 2       62,125  0,6175  CGGGTCACAACGATGG        TCTTTCACAA
+chr1    960660  961744  6       +       960800  961628  140,116 TGCACCTAGGTCGGAT        GCGCGCGCGT
+chr1    961651  961879  4       +       961750  961825  99,54   TGCACCTAGGTCGGAT        GCGCGCGCGT
+chr1    1013487 1014125 17      +       1013576 1013983 89,142  TGGGCGTAGTACGATA        CTTCACAGAT
+chr1    1228826 1231935 2       -       1228946 1231891 120,44  ACACCCTGTAAGTGGC        AACTTCTCCT
+chr1    1228829 1231924 2       -       1228946 1231891 117,33  CCTCAGTGTCAACTGT        GTGTAATTTC
+chr1    1257105 1257310 1       -       1257130 1257207 25,103  GCTCCTAAGCGTAGTG        CCCCGGTCGC
+chr1    1257207 1263367 1       -       1257310 1263345 103,22  GCTCCTAAGCGTAGTG        CCCCGGTCGC
+chr1    1267875 1273726 6       -       1267992 1273665 117,61  TGGGCGTAGTACGATA        TGTCTACATC
+chr1    1267911 1273761 4       -       1267992 1273665 81,96   GCTCCTAAGCGTAGTG        CCCCGGTCGC
+chr1    1308623 1308972 11      +       1308720 1308914 97,58   ACACCCTGTAAGTGGC        CTGGGCAATC
 ```
-Each column‘s meaning: 1) chrom 2)start of the read 3) end of the read 4) junctions seq 5) numbers of junction read counts with the same UMI and cell barcode mapped to the same junction
-6) strand 7) start of the junction 8) end of the junction 9,10) no usage 11) anchor length of the read
-12) no usage 13) cell barcode of the read 14) UMI information of the read
+Each column‘s meaning: 1) chrom 2)start of the read 3) end of the read  4) numbers of junction read counts with the same UMI and cell barcode mapped to the same junction
+5) strand 6) start of the junction 7) end of the junction  8) anchor length of the read 9) cell barcode of the read 10) UMI information of the read
 
 After obtaining initial junctions information, we used juncstat to count CB-UMI based junction reads.
 Examples of stat output:
@@ -231,7 +226,19 @@ output_file=*.nonsplit  ###output CB-UMI based nonsplit reads crossing the splic
 $ISSAC IR extract -s FR -b ${barcode} -t ${site} ${bamfile} -o ${output_file}
 ```
 The output file of IR extract is shown as below:
-
+```
+chr10:100523886:-:CATCCCACATTGTAGC:CGCGGTGGCGGT 5
+chr10:100523886:-:GTAGCTAAGACTCTTG:ATTGCCTTAATT 1
+chr10:100523886:-:TCCTCTTTCATCGGGC:ACAGGTAGATCT 1
+chr10:100523886:-:TCCTCTTTCATCGGGC:ACAGTATTGTAG 6
+chr10:100523886:-:TCCTCTTTCATCGGGC:TGTCTCCAAAAT 4
+chr10:100523886:-:TGGCGTGTCAGCGCAC:TCTCCACCGATT 1
+chr10:100523886:-:TTCTGTATCATCACAG:GTTTACGAAATA 1
+chr10:100523929:-:TTCTGTATCATCACAG:GTTTACGAAATA 1
+chr10:100525399:-:TGGCGTGTCAGCGCAC:GGACTTAGCAAG 1
+chr10:100525399:-:TTCAATCCATTCAGGT:TCACACTCTCAT 1
+```
+Each line means the nonsplit read counts with the corresponding cell barcode and UMI crossing the defined splice site.
 ## Model construction
 After obtaining phenotype(.filtered), GRM, genotype(.bcf &.csi),  .PC file, we could perform model construction for each splice site to estimate coefficients of fixed effect and random effect
 GRM preparation
