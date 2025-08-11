@@ -12,6 +12,8 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 4) nlopt
 5) crypto
 
+## How to install ISSAC?
+
 ## Phenotype preparation
 After obtaining bam files for each metacell, we first perform junctions extract and quantification.
 
