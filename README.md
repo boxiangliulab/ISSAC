@@ -166,6 +166,8 @@ JP_RIK_H002:1	JP_RIK_H002:3	JP_RIK_H003:1	JP_RIK_H003:10	JP_RIK_H003:14	JP_RIK_H
 -0.246216596559398	-0.513259551637828	0.206514590906757	-0.0313668263851331	0.482904965754699	0.0864592524330276
 -0.583672003889058	0.315994111242256	-0.3882240320452	0.190005776987925	0.429551644264448	0.636717879434517
 ```
+
+ISSAC model part estimated parameters for both fixed effect and random effect through constructing null binomial mixed model.
 ```
 $ISSAC model –s *.filtered   #phenotype    
        -p *.PC   # PC file  
@@ -184,7 +186,7 @@ another four lines are 1) residuals-null 2) π-null 3) total CB-UMI counts for t
 
 ## score tests for sQTL mapping
 
-After obtaining model files, then we could utilize bcf file to perform cis-sQTL mapping
+After obtaining model files, then we could utilize genotype file (*.bcf file with *.csi index file) to perform cis-sQTL mapping
 
 ISSAC QTL mapping:
 ```
@@ -194,7 +196,7 @@ $ISSAC QTL
        -c chr${i} ## the chromosome of splice sites  
        -x *.PC   ##PC file  
        -v chr${i}.recode.bcf ## genotype file  
-       -w 1000000  ##the windows within this range will be used to perform cis-sQTL mapping  
+       -w 1000000  ##SNPs located within the window will be used to perform cis-sQTL mapping  
        -o $output_pos   ##the output file’s position  
        -t 1  ##the sQTLs with pvalue less than this threshold will be output to result files  
 ```
