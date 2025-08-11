@@ -17,7 +17,7 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 To improve statistical power while maintaining low sparsity intrinsic to single-cell data, we prepared phenotype for downstream cis-sQTL based on the concept of metacells. For each donor, initial estimates for each cell cluster were obtained based on PC embedding obtained from snRNA-seq gene expression matrix through k nearest neighbors’ graph construction and Louvain clustering (with m as the default parameters of the size of each cluster). Then we iteratively decomposed clusters with less than m cells to adjacent larger clusters to ensure each cluster having at least m cells. Finally, each cluster with at least m cells was treated as one metacell for downstream sQTL mapping tasks. The original code of our metacell detection method is uploaded: https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/analysis_pipeline/DLPFC_analysis/sQTL_mapping/metacell_calling.py 
 
 ## Phenotype preparation
-After obtaining bam files for each metacell, we first perform junctions extract and quantification.
+After obtaining bam files for each metacell, we first perform junctions extract.
 
 1）
 ```
@@ -39,7 +39,7 @@ Examples of stat output
 Each column‘s meaning: 1) intron junction information 2) UMI count of the intron in the bam files
 Here, we use UMI counts to quantify intron junction reads to avoid PCR amplication bias
 
-After obtaining all the .junc and .stat file for each metacell, we perform intron cluster and site quantification
+After obtaining all the .junc and .stat file for each metacell, we perform splice site partner definition and splice usage ratio computing
 
 2）
 ```
