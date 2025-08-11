@@ -105,18 +105,18 @@ another four lines are 1) residuals 2) pi 3) total UMI count for the site in eac
 ## score tests for sQTL mapping
 
 After obtaining model files, then we could utilize bcf file to perform cis-sQTL mapping
-```
-ISSAC QTL mapping:
 
+ISSAC QTL mapping:
+```
 $ISSAC QTL   
-       -p $model_file_pos   the model files position  
-       -m  *.common the sample names of phenotype and PC  file  
-       -c chr${i}  the chromosome of splice sites  
-       -x *.PC   PC file  
-       -v chr${i}.recode.bcf  genotype file  
-       -w 1000000  the windows within this range will be used to perform cis-sQTL mapping  
-       -o $output_pos   the output file’s position  
-       -t 1  the sQTLs with pvalue less than this threshold will be output to result files  
+       -p $model_file_pos  ## the model files position  
+       -m  *.common ## the sample names of phenotype and PC  file  
+       -c chr${i} ## the chromosome of splice sites  
+       -x *.PC   ##PC file  
+       -v chr${i}.recode.bcf ## genotype file  
+       -w 1000000  ##the windows within this range will be used to perform cis-sQTL mapping  
+       -o $output_pos   ##the output file’s position  
+       -t 1  ##the sQTLs with pvalue less than this threshold will be output to result files  
 ```
 
 Output of ISSAC QTL includes .result file and it will output results of all the splice sites in your desired chromosome of your .site file
