@@ -83,6 +83,7 @@ $ISSAC pheno_group $sample_file $junc_pos $out_file_prefix $read_threshold $log_
 
 Output of ISSAC pheno_group include 4 files;
 .inclu_exclu (deposit each splice site’s info including included intron and excluded intron)  
+
 The file of .inclu_exclu is shown as below:
 ```
 chr10:+:73 110985627
@@ -115,6 +116,7 @@ excluded 11165682:11249152
 
 ```
 Splice sites(first line), junction reads supporting the usage of the site (second line) & junction reads competing the usage of the site (third line) are involved in the file.
+
 The file of .intron.out is shown as below:
 ```
 chr10:+:231 chr10:+:22609717:22714182 0 0 0 0 0 0
@@ -131,6 +133,7 @@ chr10:+:237 chr10:+:23095726:23104143 0 0 0 0 0 0
 chr10:+:238 chr10:+:23104244:23110241 0 0 1 0 0 0
 ```
 .intron.out deposits intron clusters' results and UMI counts for each intron in each sample.
+
 The file of .refined is shown as below:
 ```
 chr10:+:111 11852215:11862911:125 11852215:11866530:640
@@ -145,6 +148,7 @@ chr10:+:119 119425085:119430374:58
 chr10:+:12 101587457:101594657:27 101588400:101594657:263
 ```
 .refined deposits each intron's CB-UMI based junction reads across all samples
+
 The file of .site is shown as below:
 ```
 chr10:-:14553321 0:0 1:1 0:1 0:0 0:0 0:0 0:0
