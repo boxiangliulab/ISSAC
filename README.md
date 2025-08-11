@@ -16,14 +16,14 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 After obtaining bam files for each metacell, we first perform junctions extract and quantification.
 
 1) 
-·junctools=junctools 
+`junctools=junctools `
 juncstat=junc_stat
 bamfile=*.bam  //metacell level bamfile; needing .bai index file
 output_file=*.junc
 ${junctools} junctions extract -a 8 -m 50 -s FR ${bamfile} -o ${output_file} (FR for 5' scRNA-seq & RF for 3' scRNA-seq)
 barcode=*.barcode //the cell barcode you want to extract
 output=*.stat
-${juncstat} ${barcode} ${output_file} ${output}·
+${juncstat} ${barcode} ${output_file} ${output}`
 
 Examples of junctools output
 Each column‘s meaning: 1) chrom 2)start of the read 3) end of the read 4) junc seq 5) read count
