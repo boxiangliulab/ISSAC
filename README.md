@@ -297,7 +297,7 @@ pi      0.984151        0.986855        0.984468        0.984691        0.984471
 total   2       2       1       2       1       2       2
 y       2       2       1       2       1       2       2
 ```
-The first line includes: 1) splice site 2) dispersion parameter 3) variance components of random effects
+The first line includes: 1) splice site name 2) normalized parameter 3) variance components of random effects
 
 Another four lines are 1) residuals-null 2) π-null 3) total CB-UMI counts for the site in each sample 4)  CB-UMI counts supporting the usage of the site in each sample
 
