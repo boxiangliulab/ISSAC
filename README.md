@@ -29,15 +29,47 @@ output=*.stat
 ${ISSAC} juncstat ${barcode} ${output_file} ${output}`
 ```
 
-
-Examples of junctools output
-Each column‘s meaning: 1) chrom 2)start of the read 3) end of the read 4) junc seq 5) read count
+Examples of junctions output:
+```
+chr1    6186734 6193054 JUNC00000065    4       -       6186816 6192929 255,0,0 2       82,125  0,6195  TATTACCCAGCCAATT        TGCTAGCGCT
+chr1    6186737 6193054 JUNC00000066    5       -       6186816 6192929 255,0,0 2       79,125  0,6192  ACCCACTGTAATAGCA        ACTGAAATTT
+chr1    6186743 6193007 JUNC00000069    2       -       6186816 6192929 255,0,0 2       73,78   0,6186  TATTACCCAGCCAATT        GTCATGTAAT
+chr1    6186743 6193041 JUNC00000067    3       -       6186816 6192929 255,0,0 2       73,112  0,6186  CGGGTCACAACGATGG        TTAGTTCCCT
+chr1    6186743 6193054 JUNC00000068    4       -       6186816 6192929 255,0,0 2       73,125  0,6186  CGGGTCACAACGATGG        TCGAGAGTAC
+chr1    6186745 6193009 JUNC00000070    1       -       6186816 6192929 255,0,0 2       71,80   0,6184  TATTACCCAGCCAATT        AAGGTACAAC
+chr1    6186751 6193019 JUNC00000071    3       -       6186816 6192929 255,0,0 2       65,90   0,6178  ACCCACTGTAATAGCA        GGGATTCAAT
+chr1    6186751 6193019 JUNC00000073    4       -       6186816 6192929 255,0,0 2       65,90   0,6178  CGGGTCACAACGATGG        GCGCAACAAT
+chr1    6186751 6193036 JUNC00000072    2       -       6186816 6192929 255,0,0 2       65,107  0,6178  ACCCACTGTAATAGCA        GGGAATCAGT
+chr1    6186754 6193018 JUNC00000075    1       -       6186816 6192929 255,0,0 2       62,89   0,6175  ACCCACTGTAATAGCA        ATCACCTTTT
+chr1    6186754 6193018 JUNC00000077    1       -       6186816 6192929 255,0,0 2       62,89   0,6175  TATTACCCAGCCAATT        TGCTATAACA
+chr1    6186754 6193046 JUNC00000074    5       -       6186816 6192929 255,0,0 2       62,117  0,6175  ACCCACTGTAATAGCA        TCATTTATAT
+chr1    6186754 6193046 JUNC00000076    3       -       6186816 6192929 255,0,0 2       62,117  0,6175  GCTGGGTTCGTTACAG        TGACCTACCG
+chr1    6186754 6193054 JUNC00000078    4       -       6186816 6192929 255,0,0 2       62,125  0,6175  CGGGTCACAACGATGG        TCTTTCACAA
+```
+Each column‘s meaning: 1) chrom 2)start of the read 3) end of the read 4) junctions seq 5) numbers of junction read counts with the same UMI and cell barcode mapped to the same junction
 6) strand 7) start of the junction 8) end of the junction 9,10) no usage 11) anchor length of the read
 12) no usage 13) cell barcode of the read 14) UMI information of the read
 
-Examples of stat output
-Each column‘s meaning: 1) intron junction information 2) UMI count of the intron in the bam files
-Here, we use UMI counts to quantify intron junction reads to avoid PCR amplication bias
+After obtaining initial junctions information, we used juncstat to count CB-UMI based junction reads.
+Examples of stat output:
+```
+chr10:+:124484326:124488421     1
+chr10:+:124801901:124806830     1
+chr10:+:124806921:124816575     1
+chr10:+:124816612:124819383     1
+chr10:+:12553356:12666735       1
+chr10:+:125719915:125721203     3
+chr10:+:130136512:130145210     1
+chr10:+:131901155:131901237     1
+chr10:+:131901330:131911561     2
+chr10:+:132397351:132404625     2
+chr10:+:132538171:132607914     2
+chr10:+:132749612:132749770     1
+chr10:+:132749845:132777670     1
+chr10:+:132777782:132780848     1
+```
+Each column‘s meaning: 1) intron junction information 2) CB-UMI based counts of the intron in the bam files
+Here, we use CB-UMI based counts to quantify intron junction reads to avoid PCR amplication bias
 
 After obtaining all the .junc and .stat file for each metacell, we perform splice site partner definition and splice usage ratio computing
 
