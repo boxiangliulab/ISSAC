@@ -232,7 +232,7 @@ $ISSAC IR extract -s FR -b ${barcode} -t ${site} ${bamfile} -o ${output_file}
 ```
 The output file of IR extract is shown as below:
 
-## model construction
+## Model construction
 After obtaining phenotype(.filtered), GRM, genotype(.bcf &.csi),  .PC file, we could perform model construction for each splice site to estimate coefficients of fixed effect and random effect
 GRM preparation
 
@@ -303,7 +303,7 @@ Another four lines are 1) residuals-null 2) π-null 3) total CB-UMI counts for t
 
 The sequence of values in another four lines corresponds to the sample name in PC file and phenotype file.
 
-## score tests for sQTL mapping
+## Score tests for sQTL mapping
 
 After obtaining model files, then we could utilize genotype file (*.bcf file with *.csi index file) to perform cis-sQTL mapping
 
