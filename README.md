@@ -19,8 +19,14 @@ To improve statistical power while maintaining low sparsity intrinsic to single-
 ## Phenotype preparation
 After obtaining bam files for each metacell, we first perform junctions extract and quantification.
 
-1) 
-`junctools=junctools`.␣␣
+1）
+```
+function test() {
+  console.log("notice the blank line before this function?");
+}
+```
+
+`junctools=junctools`
 juncstat=junc_stat  
 bamfile=*.bam  //metacell level bamfile; needing .bai index file
 output_file=*.junc
