@@ -3,7 +3,6 @@
 ### ISSAC is a scalable tool for single-cell sQTL mapping by modeling metacell splice site usage ratio with generalized binomial mixed model.
 ![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/figure1_v2.png)
 
-## tutorial
 ## before use
 Several C++ libraries needed to be added to your conda environment firstly before entering ISSAC world
 1) htslib1.3
@@ -113,7 +112,6 @@ excluded 11165682:11249152
 chr10:+:79 11217507
 included 11217507:11249152 
 excluded 11165682:11249152 
-
 ```
 Splice sites(first line), junction reads supporting the usage of the site (second line) & junction reads competing the usage of the site (third line) are involved in the file.
 
@@ -249,9 +247,6 @@ library(plinkFile)
 
 grm_bin<-"/home/e0950183/project/Imputation_April2024/filter/pruned/grm.grm.bin"
 grm_N<-"/home/e0950183/project/Imputation_April2024/filter/pruned/grm.grm.N.bin"
-
-
-
 prefix<-"/home/e0950183/project/Imputation_April2024/filter/pruned/grm"
 
 dat<-readGRM(prefix)
