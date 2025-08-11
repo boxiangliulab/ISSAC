@@ -172,7 +172,7 @@ chr10:-:19722588 0:1 0:0 0:0 0:0 0:2 0:2 0:0
 ```
 .site deposits the phenotype of each splice site with both junction reads supporting the usage of the splice site and total junction reads in each sample.
 
-After obtaining initial phenotype for each site (.site), we perform phenotype filtering 
+After obtaining initial phenotype for each site (.site), we perform phenotype filtering to remove high sparsity splice sites or splice sites with little variance
 3)
 ```
 splice_read_count=*.site  (the initial phenotype file obtained from previous step)
@@ -187,6 +187,35 @@ $ISSAC pheno_output $splice_read_count $out_file $prop_file $sd $na_prop
 
 The output of filter including two files:
 (1).filtered (2).prop
+.filtered deposits the phenotype of each splice site which passes the threshold and will be finally used for sQTL mapping tasks.
+```
+JP_RIK_H002:1 JP_RIK_H017:1 JP_RIK_H019:1 JP_RIK_H024:1 JP_RIK_H026:1 JP_RIK_H028:1 JP_RIK_H029:1 JP_RIK_H035:1
+chr10:+:104254499 1:2 2:13 2:15 0:6 1:7 0:7 0:2
+chr10:+:104254573 0:1 0:2 0:2 1:2 1:2 1:1 1:2
+chr10:+:104254962 1:2 9:11 13:15 6:6 5:7 6:7 2:2
+chr10:+:104255072 0:2 2:13 0:15 0:6 0:7 0:7 0:2
+chr10:+:104255162 2:2 13:13 15:15 6:6 7:7 7:7 2:2
+chr10:+:104255166 0:1 0:9 0:13 0:6 0:5 0:6 0:2
+chr10:+:104257365 0:1 0:11 1:13 2:6 0:5 0:8 0:4
+chr10:+:104257434 0:1 0:11 0:12 0:4 0:5 0:8 0:4
+chr10:+:104257483 0:1 0:11 0:12 0:4 0:5 0:8 0:4
+chr10:+:110008299 1:2 1:1 1:2 0:1 1:2 1:1 2:2
+chr10:+:110008982 0:2 0:1 0:2 0:2 0:2 0:1 0:2
+chr10:+:110077118 0:2 0:1 0:2 1:1 0:2 0:1 0:2
+chr10:+:110079297 0:2 0:1 0:2 0:1 0:2 0:1 0:2
+chr10:+:110083547 0:2 0:1 0:2 0:1 0:2 0:1 0:2
+```
+*.prop deposites the normalized splice usage ratios of each splice site which passes the threshold and could be used for splice PC computing.
+```
+chr10:-:120793306 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000
+chr10:-:120793325 1.000000 1.000000 1.000000 1.000000 1.000000 1.000000 1.000000
+chr10:-:129036456 0.666667 0.666667 1.000000 1.000000 0.666667 0.333333 1.000000
+chr10:-:129036523 0.000000 0.000000 0.000000 0.000000 0.333333 0.666667 0.000000
+chr10:-:16782084 1.000000 1.000000 0.944444 1.000000 1.000000 1.000000 1.000000
+chr10:-:16816972 0.846154 1.000000 0.777778 0.888889 1.000000 1.000000 0.933333
+chr10:-:16817084 0.818182 1.000000 0.764706 0.888889 1.000000 1.000000 0.937500
+chr10:-:19684254 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000
+```
 
 ## Sites located in single-intron clusters
 For those sites without competing junction reads, we could quantify nonsplit reads crossing the splice sites to check if intron retention events exist around the splice site.  
@@ -199,6 +228,7 @@ output_file=*.nonsplit  ###output CB-UMI based nonsplit reads crossing the splic
 
 $ISSAC IR extract -s FR -b ${barcode} -t ${site} ${bamfile} -o ${output_file}
 ```
+The output file of IR extract is shown as below:
 
 ## model construction
 After obtaining phenotype(.filtered), GRM, genotype(.bcf &.csi),  .PC file, we could perform model construction for each splice site to estimate coefficients of fixed effect and random effect
