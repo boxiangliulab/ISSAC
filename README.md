@@ -3,8 +3,8 @@
 ## ISSAC is designed for sQTL mapping at the single cell level by modeling metacell splice site usage ratio with generalized binomial mixed model.
 ![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/figure1_v2.png)
 
-# tutorial
-# before use
+## tutorial
+## before use
 Several C++ libraries needed to be added to your conda environment firstly before entering ISSAC world
 1) htslib1.3
 2) gsl
@@ -12,7 +12,7 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 4) nlopt
 5) crypto
 
-# Phenotype preparation
+## Phenotype preparation
 After obtaining bam files for each metacell, we first perform junctions extract and quantification.
 
 1) 
@@ -66,7 +66,7 @@ $phenotype_output $splice_read_count $out_file $prop_file $sd $na_prop
 The output of filter including two files:
 (1).filtered (2).prop
 
-# model construction
+## model construction
 After obtaining phenotype(.filtered), GRM, genotype(.bcf &.csi),  .PC file, we could perform model construction for each splice site to estimate coefficients of fixed effect and random effect
 GRM preparation
 
@@ -91,7 +91,7 @@ Example of model files output by ISSAC model:
 The first line includes: 1) splice site 2) dispersion parameter 3) variance components of random effects
 another four lines are 1) residuals 2) pi 3) total UMI count for the site in each sample 4) used UMI count for the site in each sample
 
-# score tests for sQTL mapping
+## score tests for sQTL mapping
 
 After obtaining model files, then we could utilize bcf file to perform cis-sQTL mapping
 
