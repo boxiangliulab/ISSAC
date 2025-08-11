@@ -290,9 +290,18 @@ $ISSAC model –s *.filtered   #phenotype
 Note: ISSAC model will output all the splice site’s model containing in the phenotype file
 
 Example of model files output by ISSAC model:
-
+```
+Splice_site     chr19:+:34254614        0.672887        2.04307e-14                             
+residuals       0.031697        0.0262904       0.015532        0.030618        0.0155294       0.0285655       0.0293599
+pi      0.984151        0.986855        0.984468        0.984691        0.984471        0.985717        0.98532
+total   2       2       1       2       1       2       2
+y       2       2       1       2       1       2       2
+```
 The first line includes: 1) splice site 2) dispersion parameter 3) variance components of random effects
-another four lines are 1) residuals-null 2) π-null 3) total CB-UMI counts for the site in each sample 4)  CB-UMI counts supporting the usage of the site in each sample
+
+Another four lines are 1) residuals-null 2) π-null 3) total CB-UMI counts for the site in each sample 4)  CB-UMI counts supporting the usage of the site in each sample
+
+The sequence of values in another four lines corresponds to the sample name in PC file and phenotype file.
 
 ## score tests for sQTL mapping
 
@@ -316,6 +325,16 @@ Output of ISSAC QTL includes .result file and it will output results of all the 
 Example of result file: 1) splice site 2) SNP 3) pvalue 4) effect size 5) standard error of effect size
 
 ```
+chr6:-:100847625        chr6:100350014:G:T      0.812474        0.00897815      0.0378448
+chr6:-:100847625        chr6:100350596:C:T      0.713437        -0.0102457      0.027899
+chr6:-:100847625        chr6:100350696:A:C      0.387003        -0.0118167      0.0136599
+chr6:-:100847625        chr6:100351323:C:T      0.00253261      0.0413224       0.0136855
+chr6:-:100847625        chr6:100351343:A:T      0.00253261      0.0413224       0.0136855
+chr6:-:100847625        chr6:100351344:G:A      0.00253261      0.0413224       0.0136855
+chr6:-:100847625        chr6:100352062:G:A      0.882403        0.00847691      0.0573062
+chr6:-:100847625        chr6:100352246:G:A      0.451096        -0.00176255     0.00233887
+chr6:-:100847625        chr6:100352961:G:A      0.882403        0.00847691      0.0573062
+chr6:-:100847625        chr6:100353644:A:T      0.283973        0.0126006       0.0117604
 ```
 
 
