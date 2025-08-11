@@ -1,6 +1,6 @@
-## ISSAC （Integrative single-cell splicing analysis and QTL caller） 
+# ISSAC （Integrative single-cell splicing analysis and QTL caller） 
 
-#ISSAC is designed for sQTL mapping at the single cell level by modeling metacell splice site usage ratio with generalized binomial mixed model.
+##ISSAC is designed for sQTL mapping at the single cell level by modeling metacell splice site usage ratio with generalized binomial mixed model.
 ![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/figure1_v2.png)
 
 # tutorial
