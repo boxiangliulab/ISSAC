@@ -21,9 +21,14 @@ After obtaining bam files for each metacell, we first perform junctions extract 
 
 1）
 ```
-function test() {
-  console.log("notice the blank line before this function?");
-}
+junctools=junctools
+juncstat=junc_stat  
+bamfile=*.bam  //metacell level bamfile; needing .bai index file
+output_file=*.junc
+${junctools} junctions extract -a 8 -m 50 -s FR ${bamfile} -o ${output_file} (FR for 5' scRNA-seq & RF for 3' scRNA-seq)
+barcode=*.barcode //the cell barcode you want to extract
+output=*.stat
+${juncstat} ${barcode} ${output_file} ${output}`
 ```
 
 `junctools=junctools`
