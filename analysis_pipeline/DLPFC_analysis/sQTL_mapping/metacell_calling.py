@@ -15,7 +15,7 @@ meta_size = 10
 
 cell="Endothelial"
 cohort="NG"
-adata = sc.read_h5ad("harmony_excitatory_neurons.h5ad")
+adata = sc.read_h5ad("harmony_endothelial.h5ad")
 
 
 X = pd.DataFrame(adata.obsm['X_pca'])
