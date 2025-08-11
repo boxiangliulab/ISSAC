@@ -123,17 +123,21 @@ $ISSAC IR extract -s FR -b ${barcode} -t ${site} ${bamfile} -o ${output_file}
 After obtaining phenotype(.filtered), GRM, genotype(.bcf &.csi),  .PC file, we could perform model construction for each splice site to estimate coefficients of fixed effect and random effect
 GRM preparation
 
-use plink to obtain .grm.bin, .grm.grm.N.bin file (plink --bfile pruned_output --make-grm-bin --out grm_output)
+use plink to obtain .grm.bin, .grm.grm.N.bin file 
+```
+plink --bfile pruned_output --make-grm-bin --out grm_output
+```
+
 use below file to obtain GRM matrix 
 
 Examples of GRM file: Note: all the phenotypes and PCs’ names should be composed of ${sample}:${seq}; and ${sample} must exist in GRM file
 ```
-$ISSAC model –s *.filtered   phenotype    
-       -p *.PC    PC file  
-       -g GRM.txt    GRM file  
-       -n 617   sample numbers of GRM file  
-       -u ${model_pos}  the position of all the model files   
-       -o  middle  the output name  
+$ISSAC model –s *.filtered   #phenotype    
+       -p *.PC   # PC file  
+       -g GRM.txt   # GRM file  
+       -n 617 #  sample numbers of GRM file  
+       -u ${model_pos} # the position of all the model files   
+       -o  middle # the output name  
 ```
 
 Note: ISSAC model will output all the splice site’s model containing in the phenotype file
@@ -141,7 +145,7 @@ Note: ISSAC model will output all the splice site’s model containing in the ph
 Example of model files output by ISSAC model:
 
 The first line includes: 1) splice site 2) dispersion parameter 3) variance components of random effects
-another four lines are 1) residuals 2) pi 3) total UMI count for the site in each sample 4) used UMI count for the site in each sample
+another four lines are 1) residuals-null 2) π-null 3) total CB-UMI counts for the site in each sample 4)  CB-UMI counts supporting the usage of the site in each sample
 
 ## score tests for sQTL mapping
 
