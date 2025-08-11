@@ -19,7 +19,6 @@ To improve statistical power while maintaining low sparsity intrinsic to single-
 ## Phenotype preparation
 After obtaining bam files for each metacell, we first perform junctions extract.
 
-1）
 ```
 bamfile=*.bam  //bamfile; needing .bai index file
 output_file=*.junc
@@ -73,18 +72,21 @@ Here, we use CB-UMI based counts to quantify intron junction reads to avoid PCR 
 
 After obtaining all the .junc and .stat file for each metacell, we perform splice site partner definition and splice usage ratio computing
 
-2）
 ```
-read_threshold=30 (could be adjust; intron with its whole supported UMI counts less than the threshold will be deleted)
-junc_pos=/${}_junc (the position of all the .stat file)
-sample_file=${}_sample (deposit the sample name)
-out_file_prefix=${} (the output file’s prefix)
-log_out=${} (the log file)
+read_threshold=20 ## could be adjust; intron with its whole supported UMI counts less than the threshold will not be considered in the splice site partner definition
+junc_pos=/directory/junc ## the directory of all the .stat file
+sample_file=*_sample ## deposit the sample name
+out_file_prefix=* ## the output file’s prefix
+log_out=* # the log file of intermediate results
 $ISSAC pheno_group $sample_file $junc_pos $out_file_prefix $read_threshold $log_out
 ```
 
-Output of 03_phenotype_group include 4 files;
+Output of ISSAC pheno_group include 4 files;
 .inclu_exclu (deposit each splice site’s info including included intron and excluded intron)
+the file of .inclu_exclu is shown as below:
+```
+
+```
 .intron.out (deposit intron cluster’s results and UMI counts in each sample)
 .refined (deposit each intron’s total number larger than the threshold)
 .site (deposit the phenotype of each splice site)
