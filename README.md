@@ -170,7 +170,6 @@ chr10:-:19722588 0:1 0:0 0:0 0:0 0:2 0:2 0:0
 .site deposits the phenotype of each splice site with both junction reads supporting the usage of the splice site and total junction reads in each sample.
 
 After obtaining initial phenotype for each site (.site), we perform phenotype filtering to remove high sparsity splice sites or splice sites with little variance
-3)
 ```
 splice_read_count=*.site  (the initial phenotype file obtained from previous step)
 
