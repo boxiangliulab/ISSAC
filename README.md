@@ -16,8 +16,8 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 After obtaining bam files for each metacell, we first perform junctions extract and quantification.
 
 1) 
-`junctools=junctools 
-juncstat=junc_stat
+`junctools=junctools <br>
+juncstat=junc_stat <br>
 bamfile=*.bam  //metacell level bamfile; needing .bai index file
 output_file=*.junc
 ${junctools} junctions extract -a 8 -m 50 -s FR ${bamfile} -o ${output_file} (FR for 5' scRNA-seq & RF for 3' scRNA-seq)
