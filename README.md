@@ -82,14 +82,95 @@ $ISSAC pheno_group $sample_file $junc_pos $out_file_prefix $read_threshold $log_
 ```
 
 Output of ISSAC pheno_group include 4 files;
-.inclu_exclu (deposit each splice site’s info including included intron and excluded intron)
-the file of .inclu_exclu is shown as below:
+.inclu_exclu (deposit each splice site’s info including included intron and excluded intron)  
+The file of .inclu_exclu is shown as below:
 ```
+chr10:+:73 110985627
+included 110919657:110985627 
+excluded 110919657:110951607 110919657:110964124 
+chr10:+:76 111114416
+included 111114416:111114902 111114416:111117959 
+excluded 
+chr10:+:76 111114902
+included 111114416:111114902 
+excluded 111114416:111117959 
+chr10:+:76 111115030
+included 111115030:111117959 
+excluded 111114416:111117959 
+chr10:+:76 111117959
+included 111114416:111117959 111115030:111117959 
+excluded 
+chr10:+:79 11165682
+included 11165682:11210670 11165682:11217424 11165682:11249152 
+excluded 
+chr10:+:79 11210670
+included 11165682:11210670 
+excluded 11165682:11217424 11165682:11249152 
+chr10:+:79 11217424
+included 11165682:11217424 
+excluded 11165682:11249152 
+chr10:+:79 11217507
+included 11217507:11249152 
+excluded 11165682:11249152 
 
 ```
-.intron.out (deposit intron cluster’s results and UMI counts in each sample)
-.refined (deposit each intron’s total number larger than the threshold)
-.site (deposit the phenotype of each splice site)
+Splice sites(first line), junction reads supporting the usage of the site (second line) & junction reads competing the usage of the site (third line) are involved in the file.
+The file of .intron.out is shown as below:
+```
+chr10:+:231 chr10:+:22609717:22714182 0 0 0 0 0 0
+chr10:+:232 chr10:+:22853655:22868088 0 0 0 0 0 0
+chr10:+:233 chr10:+:22925636:22927862 0 0 0 0 0 0
+chr10:+:233 chr10:+:22925636:22931995 2 0 2 0 1 0
+chr10:+:233 chr10:+:22928106:22931995 0 0 0 0 0 0
+chr10:+:234 chr10:+:22932044:22946143 1 1 1 0 0 0
+chr10:+:234 chr10:+:22932044:22955806 0 0 0 0 0 0
+chr10:+:234 chr10:+:22946261:22955806 1 0 0 0 0 0
+chr10:+:235 chr10:+:22955932:22959069 0 0 0 0 0 0
+chr10:+:236 chr10:+:22959138:22959398 0 0 0 0 0 0
+chr10:+:237 chr10:+:23095726:23104143 0 0 0 0 0 0
+chr10:+:238 chr10:+:23104244:23110241 0 0 1 0 0 0
+```
+.intron.out deposits intron clusters' results and UMI counts for each intron in each sample.
+The file of .refined is shown as below:
+```
+chr10:+:111 11852215:11862911:125 11852215:11866530:640
+chr10:+:112 118730410:118754395:128
+chr10:+:113 119104197:119104763:91 119104197:119107947:44
+chr10:+:114 119108164:119111848:35
+chr10:+:115 119207969:119326515:530 119207969:119380814:38 119326611:119380814:182
+chr10:+:116 119380927:119396694:105
+chr10:+:117 119396772:119423165:72
+chr10:+:118 119423266:119424992:58
+chr10:+:119 119425085:119430374:58
+chr10:+:12 101587457:101594657:27 101588400:101594657:263
+```
+.refined deposits each intron's CB-UMI based junction reads across all samples
+The file of .site is shown as below:
+```
+chr10:-:14553321 0:0 1:1 0:1 0:0 0:0 0:0 0:0
+chr10:-:14553387 0:0 1:1 0:1 0:0 0:0 0:0 0:0
+chr10:-:16752538 0:0 0:0 0:0 0:0 0:0 0:0 0:0
+chr10:-:16764510 0:0 0:0 1:1 0:0 0:0 0:0 0:0
+chr10:-:16782084 13:13 11:11 17:18 9:9 6:6 15:15 15:15
+chr10:-:16816972 11:13 11:11 14:18 8:9 6:6 15:15 14:15
+chr10:-:16817084 9:11 12:12 13:17 8:9 7:7 13:13 15:16
+chr10:-:17359600 0:0 0:0 0:0 0:0 0:0 0:0 0:0
+chr10:-:17387100 0:0 0:0 0:0 0:0 0:0 0:0 0:0
+chr10:-:19684254 0:1 0:0 0:0 0:0 0:3 0:2 0:3
+chr10:-:19706080 0:0 0:0 0:0 0:0 0:0 0:0 0:0
+chr10:-:19711288 0:0 0:0 0:0 0:0 0:0 0:0 1:1
+chr10:-:19714521 0:0 0:0 0:0 0:0 1:1 0:0 0:1
+chr10:-:19716890 1:1 0:0 0:0 0:0 2:3 2:2 2:3
+chr10:-:19718499 0:1 0:0 0:0 0:0 1:3 2:2 2:3
+chr10:-:19718506 1:1 0:0 0:0 0:0 2:3 0:2 1:3
+chr10:-:19686434 0:0 0:0 0:0 0:0 0:0 0:0 0:0
+chr10:-:19701526 0:0 0:0 0:0 0:0 0:0 0:0 0:0
+chr10:-:19711288 1:1 0:0 0:0 0:0 0:2 2:2 2:2
+chr10:-:19714521 0:1 0:0 0:0 0:0 2:2 0:2 0:2
+chr10:-:19722422 1:1 0:0 0:0 0:0 2:2 2:2 0:0
+chr10:-:19722588 0:1 0:0 0:0 0:0 0:2 0:2 0:0
+```
+.site deposits the phenotype of each splice site with both junction reads supporting the usage of the splice site and total junction reads in each sample.
 
 After obtaining initial phenotype for each site (.site), we perform phenotype filtering 
 3)
