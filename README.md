@@ -21,14 +21,12 @@ After obtaining bam files for each metacell, we first perform junctions extract 
 
 1）
 ```
-junctools=junctools
-juncstat=junc_stat  
-bamfile=*.bam  //metacell level bamfile; needing .bai index file
+bamfile=*.bam  //bamfile; needing .bai index file
 output_file=*.junc
-${junctools} junctions extract -a 8 -m 50 -s FR ${bamfile} -o ${output_file} (FR for 5' scRNA-seq & RF for 3' scRNA-seq)
+${ISSAC} junctions extract -a 8 -m 50 -s FR ${bamfile} -o ${output_file} (FR for 5' scRNA-seq & RF for 3' scRNA-seq)
 barcode=*.barcode //the cell barcode you want to extract
 output=*.stat
-${juncstat} ${barcode} ${output_file} ${output}`
+${ISSAC} juncstat ${barcode} ${output_file} ${output}`
 ```
 
 
@@ -45,13 +43,12 @@ After obtaining all the .junc and .stat file for each metacell, we perform intro
 
 2）
 ```
-phenotype_group=phenotype_group
 read_threshold=30 (could be adjust; intron with its whole supported UMI counts less than the threshold will be deleted)
 junc_pos=/${}_junc (the position of all the .stat file)
 sample_file=${}_sample (deposit the sample name)
 out_file_prefix=${} (the output file’s prefix)
 log_out=${} (the log file)
-$phenotype_group $sample_file $junc_pos $out_file_prefix $read_threshold $log_out
+$ISSAC pheno_group $sample_file $junc_pos $out_file_prefix $read_threshold $log_out
 ```
 
 Output of 03_phenotype_group include 4 files;
@@ -64,14 +61,13 @@ After obtaining initial phenotype for each site (.site), we perform phenotype fi
 3)
 ```
 splice_read_count=*.site  (the initial phenotype file obtained from previous step)
-phenotype_output=phenotype_output
 
 out_file=*.filtered (deposit filtered phenotype file)
 prop_file=*.prop
 sd=0.01 (splice sites with variations less than the threshold will be deleted)
 na_prop=0.4 (splice sites lacking phenotypes in larger than the threshold of the whole samples will be deleted)
 
-$phenotype_output $splice_read_count $out_file $prop_file $sd $na_prop
+$ISSAC pheno_output $splice_read_count $out_file $prop_file $sd $na_prop
 ```
 
 The output of filter including two files:
@@ -86,7 +82,6 @@ use below file to obtain GRM matrix
 
 Examples of GRM file: Note: all the phenotypes and PCs’ names should be composed of ${sample}:${seq}; and ${sample} must exist in GRM file
 ```
-ISSAC=ISSAC
 $ISSAC model –s *.filtered   phenotype    
        -p *.PC    PC file  
        -g GRM.txt    GRM file  
