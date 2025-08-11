@@ -127,6 +127,24 @@ use plink to obtain .grm.bin, .grm.grm.N.bin file
 ```
 plink --bfile pruned_output --make-grm-bin --out grm_output
 ```
+
+Here, we provided one approach to transform *.bin file to *.txt file for our downstream tasks.
+```
+library(plinkFile)
+
+grm_bin<-"/home/e0950183/project/Imputation_April2024/filter/pruned/grm.grm.bin"
+grm_N<-"/home/e0950183/project/Imputation_April2024/filter/pruned/grm.grm.N.bin"
+
+
+
+prefix<-"/home/e0950183/project/Imputation_April2024/filter/pruned/grm"
+
+dat<-readGRM(prefix)
+
+newdat<-as.data.frame(dat)
+
+write.table(newdat,"/home/e0950183/project/AIDA_phase2_cell/GRM/GRM.txt",sep=" ",row.names=TRUE,col.names=TRUE,quote=FALSE)
+```
 The final GRM file is shown as below:
 ```
 JP_RIK_H001 JP_RIK_H002 JP_RIK_H003 JP_RIK_H004 JP_RIK_H005 JP_RIK_H006
