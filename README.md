@@ -12,7 +12,7 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 5) crypto
 
 ## How to install ISSAC?
-1）install from original code
+### 1）install from original code
 
 download ISSAC original code to your directroy:
 ```
@@ -27,8 +27,9 @@ When you see the output
 Usage:          ISSAC <command> [options]
 Command:        Integrative single-cell splicing analysis and QTL caller
 ```
-That means the tool has been successfully installed into your directory.
-2) install from conda
+That means ISSAC has been successfully installed into your directory.
+
+### 2) install from conda
 We provide the option for you to download directly from conda
 
 
