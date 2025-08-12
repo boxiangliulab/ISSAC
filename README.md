@@ -146,7 +146,7 @@ chr10:+:236 chr10:+:22959138:22959398 0 0 0 0 0 0
 chr10:+:237 chr10:+:23095726:23104143 0 0 0 0 0 0
 chr10:+:238 chr10:+:23104244:23110241 0 0 1 0 0 0
 ```
-.intron.out deposits intron clusters' results and UMI counts for each intron in each sample.
+.intron.out deposits CB-UMI based junction read counts for each intron in each sample.
 
 The file of .refined is shown as below:
 ```
