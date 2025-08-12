@@ -14,7 +14,7 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 ## How to install ISSAC?
 ### 1）install from original code
 
-download ISSAC original code to your directroy:
+Download ISSAC original code to your directroy:
 ```
 git clone --branch master https://github.com/tibettiger/ISSAC.git
 cd ISSAC/build
@@ -29,8 +29,6 @@ Command:        Integrative single-cell splicing analysis and QTL caller
 ```
 That means ISSAC has been successfully installed into your directory.
 
-### 2) install from conda
-We provide the option for you to download directly from conda
 
 
 ## Metacell detection
