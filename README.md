@@ -3,7 +3,7 @@
 ### ISSAC is a scalable tool for single-cell sQTL mapping by modeling metacell splice site usage ratio with generalized binomial mixed model.
 ![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/figure1_v2.png)
 
-## before use
+## Before use
 Several C++ libraries needed to be added to your conda environment firstly before entering ISSAC world
 1) htslib1.3
 2) gsl
