@@ -44,7 +44,7 @@ output_file=*.junc
 ${ISSAC} junctions extract -a 8 -m 50 -s FR ${bamfile} -o ${output_file} (FR for 5' scRNA-seq & RF for 3' scRNA-seq)
 barcode=*.barcode //the cell barcode you want to extract
 output=*.stat
-${ISSAC} juncstat ${barcode} ${output_file} ${output}`
+${ISSAC} juncstat ${barcode} ${output_file} ${output}
 ```
 
 Examples of junctions output:
