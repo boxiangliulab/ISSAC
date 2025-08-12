@@ -16,12 +16,16 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 
 download ISSAC original code to your directroy:
 ```
-git clone
-cd
+git clone https://github.com/tibettiger/ISSAC.git
+cd ISSAC/build
 cmake ..
 make
 ./ISSAC -h
 ```
+
+2) install from conda
+We provide the option for you to download directly from conda
+
 ## Metacell detection
 To improve statistical power while maintaining low sparsity intrinsic to single-cell data, we prepared phenotype for downstream cis-sQTL based on the concept of metacells. For each donor, initial estimates for each cell cluster were obtained based on PC embedding obtained from snRNA-seq gene expression matrix through k nearest neighbors’ graph construction and Louvain clustering (with m as the default parameters of the size of each cluster). Then we iteratively decomposed clusters with less than m cells to adjacent larger clusters to ensure each cluster having at least m cells. Finally, each cluster with at least m cells was treated as one metacell for downstream sQTL mapping tasks. The original code of our metacell detection method is uploaded: https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/analysis_pipeline/DLPFC_analysis/sQTL_mapping/metacell_calling.py 
 
