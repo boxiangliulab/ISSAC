@@ -401,9 +401,7 @@ int JunctionsExtractor::parse_alignment_into_junctions(bam_hdr_t *header, bam1_t
                     j1.start = j1.thick_end;
                     j1.end = j1.start + len;
                     j1.thick_end = j1.end;
-                    //For clarity - the next junction is now open
                     started_junction = true;
-                    // YYF reset intron_motif? I guess theoretically it doesn't matter since N is the only case where it will/must be changed
                 }
                 break;
             case '=':
@@ -523,7 +521,6 @@ int JunctionsExtractor::identify_junctions_from_BAM() {
 }
 
 
-//Create the junctions vector from the map
 void JunctionsExtractor::create_junctions_vector() {
     for(map<string, Junction> :: iterator it = junctions_.begin();
         it != junctions_.end(); it++) {
@@ -532,8 +529,7 @@ void JunctionsExtractor::create_junctions_vector() {
     }
 }
 
-// I'm stealing these from JunctionsAnnotator - so there's some code redundancy - YYF
-//Get the reference sequence at a particular coordinate
+
 string JunctionsExtractor::get_reference_sequence(string position) {
     int len;
     faidx_t *fai = fai_load(ref_.c_str());
@@ -548,8 +544,7 @@ string JunctionsExtractor::get_reference_sequence(string position) {
 }
 
 //Get the splice_site bases
-// note this was basically just taken from junctions annotator but now line is a Junction not an AnnotatedJunction
-//  so the end is off by 1 and I'm returning a string since i will just be checking it and then tossing/not saving as a member
+
 string JunctionsExtractor::get_splice_site(Junction & line) {
     string position1 = line.chrom + ":" +
                       common::num_to_str(line.start + 1) + "-" + common::num_to_str(line.start + 1 + 1);

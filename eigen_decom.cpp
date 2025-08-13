@@ -225,7 +225,7 @@ Eigen::SparseMatrix<double> QTL_mapping::read_in_GRM() {
              for(int j=0;j<n;j++){
                 tmp_val = line.substr(0,line.find(' '));
                 val = stod(tmp_val);
-                if(val>0.6){
+                if(val>0.3){
                 GRM.insert(i,j) = val;}
                 if(j<n-1){
                     tmp_line=line.substr(line.find(' ')+1);
@@ -410,7 +410,6 @@ void QTL_mapping::test(){
     
     int max_iteration=100;
     double tol=1e-6;
-    windowsize = 1000000;
     //Eigen::VectorXd b(n);
     //b.setRandom();
     //Eigen::VectorXd x = compute_V_inv_X(result, b, n, max_iteration, tol);

@@ -12,20 +12,57 @@
 #include<numeric>
 #include<utility>
 #include "pheno.h"
+#include <iomanip>
 
 using namespace std;
 
 bool haveCommonElements(const std::set<string>& set1, const std::set<string>& set2) {
     // Create an empty set to store the intersection
-    std::set<string> intersection;
+    //std::set<string> intersection;
 
     // Use std::set_intersection to find common elements
-    std::set_intersection(set1.begin(), set1.end(),
-                          set2.begin(), set2.end(),
-                          std::inserter(intersection, intersection.begin()));
+    //std::set_intersection(set1.begin(), set1.end(),
+    //                      set2.begin(), set2.end(),
+    //                      std::inserter(intersection, intersection.begin()));
+    int min_set1,max_set1,min_set2,max_set2;
+    int i = 0;
+    for (const std::string &s : set1) {
+        int num = std::stoi(s); // string to int
+        if(i==0){
+            min_set1=num;
+            max_set1=num;
+        }
+
+        if (num < min_set1) {
+            min_set1 = num;
+        }
+        if (num > max_set1) {
+            max_set1 = num;
+        }
+        i++;
+    }
+    i=0;
+    for (const std::string &s : set2) {
+        int num = std::stoi(s); // string to int
+        if(i==0){
+            min_set2=num;
+            max_set2=num;
+        }
+
+        if (num < min_set2) {
+            min_set2 = num;
+        }
+        if (num > max_set2) {
+            max_set2 = num;
+        }
+        i++;
+    }
+    
 
     // If the intersection set is not empty, the sets share common elements
-    return !intersection.empty();
+    //return !intersection.empty();
+    if((max_set1<min_set2)||(max_set2<min_set1))return false;
+    else return true;
 }
 
 map<string,vector<string>> cluster(set<string> intron_set){
@@ -46,7 +83,7 @@ map<string,vector<string>> cluster(set<string> intron_set){
             bool if_find = false;
             for(const auto& [key,valueSet] : cluster_site[tmp3]){
                 for(const auto&value : valueSet){
-                    if((value==donor)||(value==acceptor)){
+                    if((value>=donor)&&(value<=acceptor)){
                         cluster_site[tmp3][key].insert(donor);
                         cluster_site[tmp3][key].insert(acceptor);
                         string clu_name = tmp3 + ":" + to_string(key);
@@ -77,7 +114,7 @@ map<string,vector<string>> cluster(set<string> intron_set){
         }
 
     }
-    // merge all the clusters with common site
+    // merge all the groups with overlap regions
     for(const auto & outer_pair : cluster_site){
         const string & outer_key = outer_pair.first;
         const auto& inner_map = outer_pair.second;
@@ -156,12 +193,15 @@ pair<map<int,set<string>>,map<int,set<string>>> site_anno(set<int> site, map<int
     pair<map<int,set<string>>,map<int,set<string>>> cluster_site_inclu_exclu;
     map<int,set<string>> cluster_include;
     map<int,set<string>> cluster_exclude;
+    string site_type;
     for(const auto&elem:site){
         set<string> included;
         set<string> excluded;
         for(const auto&elem1:site_corres[elem]){
-            //check 5' splice site
-            if(i==0){
+            //check donor or acceptor
+            if(elem1>elem)site_type="donor";
+            if(elem1<elem)site_type="acceptor";
+            if(site_type=="donor"){
                 for(const auto&elem2:site_corres[elem1]){
                     bool competive=true;
                     for(const auto&elem3:site_corres[elem]){
@@ -178,7 +218,7 @@ pair<map<int,set<string>>,map<int,set<string>>> site_anno(set<int> site, map<int
                     }
                 }
             }
-            else if(i==end-1){
+            if(site_type=="acceptor"){
                 for(const auto&elem2:site_corres[elem1]){
                     bool competive=true;
                     for(const auto&elem3:site_corres[elem]){
@@ -259,12 +299,11 @@ void site_detection(map<string,vector<string>> cluster_intron, map<string,vector
         }
         pair<map<int,set<string>>,map<int,set<string>>> clu_ex_in = site_anno(site,site_corres);
         for(const auto &elem:site){
-            fout<<value<<" "<<elem<<endl;
+            fout<<value<<" "<<elem<<" ";
             fout<<"included ";
             for(const auto &elem1:clu_ex_in.first[elem]){
                 fout<<elem1<<" ";
             }
-            fout<<endl;
             fout<<"excluded ";
             for(const auto &elem2:clu_ex_in.second[elem]){
                 fout<<elem2<<" ";
@@ -307,13 +346,16 @@ void site_detection(map<string,vector<string>> cluster_intron, map<string,vector
 int pheno_group(int argc,char* argv[]){
     if(argc!=6){
         cerr<<"Usage: "<<argv[0]<<endl;
+        cerr << "Usage:\t\t" << "site-based quantification <command> [options]" << endl;
+        cerr << "Command:\t" << "splice site partner definition" << endl;
+        cerr << endl;
         return 1;
     }
     string sample_file=argv[1];
     string junc_pos=argv[2];
     string out_file_prefix=argv[3];
-    string threshold_read=argv[4]; //100
-    string log_out=argv[5]; //100
+    string threshold_read=argv[4]; //
+    string log_out=argv[5]; //
     //output
     string out_file=out_file_prefix+".intron.out";
     string refined_output=out_file_prefix+".refined";
@@ -330,7 +372,7 @@ int pheno_group(int argc,char* argv[]){
     fin.close();
     map<string,vector<int>> intron_read_map;
     string junc_name;
-    cout<<"Start construct junction cluster"<<endl;
+    cout<<"Start construct junction group"<<endl;
     string intron,num_read;
     int int_num_read;
     int length = sample_name.size();
@@ -358,7 +400,7 @@ int pheno_group(int argc,char* argv[]){
         }
         fin1.close();
     }
-    //filter intron total read count>100;
+    //filter intron total read count less than specified thresholds;
     set<string> filter_intron;
     for(const auto& element:intron_set){
         int sum = accumulate(intron_read_map[element].begin(),intron_read_map[element].end(),0);

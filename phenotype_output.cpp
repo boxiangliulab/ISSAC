@@ -52,6 +52,8 @@ double calculateStdDev(const vector<double>& vec) {
 int pheno_output(int argc,char* argv[]){
     if(argc!=6){
         cerr<<"Usage: "<<argv[0]<<endl;
+        cout << "Usage:\t\t" << "filter site with high sparsity & low variance <command> [options]" << endl;
+        cout << "Command:\t" << "filter function" << endl;
         return 1;
     }
     string read_count_file=argv[1];

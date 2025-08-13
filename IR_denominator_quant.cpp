@@ -192,6 +192,13 @@ int USRExtractor::parse_alignment_into_unspliced_read(bam_hdr_t *header, bam1_t 
                 j1.start = j1.start + len;
                 break;
             case '=':
+                for(set<int>::iterator it = j1.site_pos.begin();it!=j1.site_pos.end();++it){
+                    if((*it>j1.start+1)&&(*it<j1.start+len-1)){
+                        possible_site.insert(*it);
+                    }
+                }
+                j1.start = j1.start + len;
+                break;
             case 'M':
                 for(set<int>::iterator it = j1.site_pos.begin();it!=j1.site_pos.end();++it){
                     if((*it>j1.start+1)&&(*it<j1.start+len-1)){
@@ -202,12 +209,9 @@ int USRExtractor::parse_alignment_into_unspliced_read(bam_hdr_t *header, bam1_t 
                 break;
             //No mismatches allowed in anchor
             case 'D':
+                j1.start = j1.start + len;
+                break;
             case 'X':
-                for(set<int>::iterator it = j1.site_pos.begin();it!=j1.site_pos.end();++it){
-                    if((*it>j1.start+1)&&(*it<j1.end+len-1)){
-                        possible_site.insert(*it);
-                    }
-                }
                 j1.start = j1.start +len;
                 break;
             case 'I':

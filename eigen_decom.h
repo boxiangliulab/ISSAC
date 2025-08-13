@@ -216,7 +216,6 @@ public:
         Eigen::VectorXd mu = pi.array() * total.array();
         //Eigen::VectorXd eta = (X * beta_hat).array() + u_hat.array() + (y.array() - mu.array()) / (total.array() * pi.array() * (1.0 - pi.array()));
 
-    // Set phi = 1 (as per the Python code)
         double phi = 1.0;
 
         //int iter = 100;  // Set the number of iterations (as in the Python code)
@@ -277,7 +276,7 @@ public:
            std::cout << "Found minimum at f(x) = " << minf << std::endl;
            std::cout << "Optimal parameters: " << theta[0]  << std::endl;
          } catch (std::exception &e) {
-        std::cerr << "NLopt failed: " << e.what() << std::endl;
+           std::cerr << "NLopt failed: " << e.what() << std::endl;
          }
 
         //auto rem_optimizer = [&](Eigen::VectorXd& theta, Eigen::VectorXd& grad) -> double {
@@ -325,7 +324,7 @@ public:
         // Convergence criteria
         cout<<pre_tau<<"\t"<<tau<<endl;
 
-        if ((std::abs(pre_tau - tau) < 1e-2)||(tau_next>10)) {
+        if ((std::abs(pre_tau - tau) < 1e-3)||(tau_next>10)) {
             std::cout << "Converged\n";
             std::cout << "Final tau: " << tau << std::endl;
             tau_ = tau;
@@ -612,7 +611,7 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
             vari_total.push_back(variance);
         }
         double vari_mean = std::accumulate(vari_total.begin(), vari_total.end(), 0.0) / vari_total.size();
-        cout<<"dispersion:"<<vari_mean<<endl;
+        cout<<"normalize:"<<vari_mean<<endl;
         return vari_mean;
     }
 
@@ -630,7 +629,7 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         Eigen::VectorXd pi = sigmoid(X*beta_hat+u_hat_);
         Eigen::VectorXd mu = pi.array()*total_.array();
         Eigen::VectorXd residuals = y_.array() - mu.array();
-        cout<<"Start dispersion parameter estimation"<<endl;
+        cout<<"Start normalize parameter estimation"<<endl;
         double dispersion = dispersion_estimate(10,covariate_adjusted_geno,residuals,pi);
         fout<<"Splice_site"<<"\t"<<site<<"\t"<<dispersion<<"\t"<<tau_<<endl;
         fout<<"residuals"<<"\t";

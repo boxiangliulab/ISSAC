@@ -73,11 +73,10 @@ struct Junction : BED {
     void print(ostream& out) const {
         out << chrom <<
             "\t" << thick_start << "\t" << thick_end <<
-            "\t" << name << "\t" << read_count << "\t" << strand <<
+            "\t" << read_count << "\t" << strand <<
             "\t" << start << "\t" << end <<
-            "\t" << color << "\t" << nblocks << 
             "\t" << start - thick_start << "," << thick_end - end <<
-            "\t" << "0," << end - thick_start << "\t" << CB << "\t" << UB << endl;
+            "\t" << CB << "\t" << UB << endl;
     }
     void print_barcodes(ostream& out) const {
         // map - I'm not sure why .begin() is giving me a const_iterator (suggesting barcodes is const-qualified)

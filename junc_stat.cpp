@@ -12,7 +12,7 @@ using namespace std;
 vector<string> split(const string& str,const string& sep) {
     vector<string> result;
     string r1 = str;
-    for(int i=0;i<=12;i++){
+    for(int i=0;i<=8;i++){
         string item=r1.substr(0,r1.find("\t"));
         string r2=r1.substr(r1.find("\t"));
         r1=r2.substr(1);
@@ -58,10 +58,10 @@ int juncstat(int argc,char* argv[]){
     while(getline(fin1,line)){
         string sep="\t";
         vector<string> splitline = split(line,sep);
-        auto it = find(barcodelist.begin(),barcodelist.end(),splitline[12]);
+        auto it = find(barcodelist.begin(),barcodelist.end(),splitline[8]);
         if(it!=barcodelist.end()){
-            string tmp_junc = splitline[0]+":"+splitline[5]+":"+splitline[6]+":"+splitline[7];
-            string CB_UMI = splitline[12]+":"+splitline[13];
+            string tmp_junc = splitline[0]+":"+splitline[4]+":"+splitline[5]+":"+splitline[6];
+            string CB_UMI = splitline[8]+":"+splitline[9];
             dict[tmp_junc].insert(CB_UMI);
         }
     }
