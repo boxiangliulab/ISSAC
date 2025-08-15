@@ -11,7 +11,7 @@ Several C++ libraries needed to be added to your conda environment firstly befor
 4) nlopt
 5) crypto
 ```
-conda install -c conda-forge gsl eigen nlopt libcrypto
+conda install -c conda-forge gsl eigen nlopt openssl
 conda install -c bioconda htslib=1.3 
 ```
 ## How to install ISSAC?
