@@ -18,7 +18,7 @@ for i in `seq 0 18`;do
 cd \$PBS_O_WORKDIR
 
 conda activate ~/ISSAC_env
-ISSAC=/data/projects/11003054/e0950183/code/ISSAC
+ISSAC=/data/projects/11003054/e0950183/code/ISSAC/build/ISSAC
 
 cat /data/projects/11003054/e0950183/brain_sQTL/metacell/${cell}_meta.txt | grep "Source" | awk '{print \$4}' | sort | uniq | sed -n '${start},${end}p' | while read line;do
   cat /data/projects/11003054/e0950183/brain_sQTL/metacell/${cell}_meta.txt | awk -v line="\$line" '{if(\$4==line)print \$1}' | sed 's/...$//' > \
