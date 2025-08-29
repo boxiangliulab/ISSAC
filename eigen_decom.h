@@ -588,6 +588,8 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         uniform_int_distribution<> dis(0, 2); // Uniform distribution between 0 and 2
         double score_vector, info_matrix, test_statistic, variance;
         Eigen::VectorXd genotype, g;
+	double observed=0;
+	double expected=0;
         for(int i=0;i<times;i++){
             test_statistics.clear();
             for(int j=0;j<100;j++){
@@ -606,13 +608,16 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
             // Test statistic
             test_statistic = score_vector / std::sqrt(info_matrix);
             test_statistics.push_back(test_statistic);
-            }
+            observed=observed+score_vector*score_vector;
+	    expected=expected+info_matrix;
+	    }
             variance = calculate_stddev(test_statistics);
             vari_total.push_back(variance);
         }
         double vari_mean = std::accumulate(vari_total.begin(), vari_total.end(), 0.0) / vari_total.size();
         cout<<"normalize:"<<vari_mean<<endl;
-        return vari_mean;
+	cout<<"normalize2:"<<std::sqrt(observed/expected)<<endl;
+        return std::sqrt(observed/expected);
     }
 
     void compute(string output_path, string site){  
