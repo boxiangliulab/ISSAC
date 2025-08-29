@@ -17,7 +17,7 @@ for i in `seq 0 42`;do
 
 cd \$PBS_O_WORKDIR
 
-ISSAC=/home/users/nus/e0950183/code/ISSAC_combine_tools_v2/QTL_mapping/build/ISSAC
+ISSAC=/home/users/nus/e0950183/code/ISSAC/build/ISSAC
 samtools=~/ISSAC_env/bin/samtools
 site=/home/users/nus/e0950183/scratch/brain_major_sub/phenotype/${cell}_single_intron_site
 
