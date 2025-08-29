@@ -22,7 +22,7 @@ for i in `seq 1 22`;do
 
 cd \$PBS_O_WORKDIR
 conda activate /home/users/nus/e0950183/ISSAC_env
-/home/users/nus/e0950183/code/optimize_QTL_mapping/build/ISSAC QTL -s ${line} \
+/home/users/nus/e0950183/code/ISSAC/build/ISSAC QTL -s ${line} \
        -p /home/users/nus/e0950183/scratch/brain_major_sub/result/major/${celltype}_model \
        -m /home/users/nus/e0950183/scratch/brain_major_sub/phenotype/${celltype}.common \
        -x /home/users/nus/e0950183/scratch/brain_major_sub/PC/${celltype}.PC \
