@@ -73,7 +73,6 @@ scIsoSim.prepare_scIsoSim(outdirectory=outdirectory,
 ###Prepare ground-truth isoform proportions
 isoform_proportion_file = "IsoformProportion.txt"
 ###Genes
-gene_ind_selected = np.random.randint(1,32768,size=300)
 gene_selected=pd.read_csv("/data/zhangyuntian/project/scSplice/data/output/selected_Genes.txt",header=None,delimiter="\t")
 gene_ind_selected=gene_selected.iloc[:,1].to_numpy()
 gene_ind_selected=gene_ind_selected -1
