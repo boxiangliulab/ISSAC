@@ -132,7 +132,7 @@ for(i in start:end){
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
         sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + geno_sex+(1|group), 
                data = model_data, 
-               family = binomial)
+               family = binomial(link = "logit"))
     final_result$V5[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
     final_result$V6[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno_sex']
     num<-which(model_data$sex==1)
@@ -140,7 +140,7 @@ for(i in start:end){
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
         AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group), 
                data = newmodel, 
-               family = binomial)
+               family = binomial(link = "logit"))
     final_result$V8[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
     final_result$V10[i]<-computeRegressionSlope(as.numeric(pheno_revise[num]),as.numeric(newmodel$geno))
     num<-which(model_data$sex==2)
@@ -148,7 +148,7 @@ for(i in start:end){
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
         AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group), 
                data = newmodel, 
-               family = binomial)
+               family = binomial(link = "logit"))
     final_result$V9[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
     final_result$V11[i]<-computeRegressionSlope(as.numeric(pheno_revise[num]),as.numeric(newmodel$geno))
 }
