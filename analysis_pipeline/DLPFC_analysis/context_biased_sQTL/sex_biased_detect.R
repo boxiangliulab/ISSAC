@@ -1,7 +1,35 @@
+args <- commandArgs(trailingOnly = TRUE)
+cell <- as.character(args[1])
+
+test <-as.numeric(args[2])
 ### read in phenotype
 library(lme4)
 library(QuantPsyc)
-cell<-"vascular"
+computeRegressionSlope <- function(x, y) {
+  # Ensure the vectors are of the same length
+  if (length(x) != length(y)) {
+    stop("Vectors x and y must have the same size.")
+  }
+  
+  # Calculate the mean of x and y
+  x_mean <- mean(x)
+  y_mean <- mean(y)
+  
+  # Calculate the standard deviation of x and y
+  x_stddev <- sqrt(mean((x - x_mean)^2))
+  y_stddev <- sqrt(mean((y - y_mean)^2))
+  
+  # Normalize x and y
+  x_normalized <- (x - x_mean) / x_stddev
+  y_normalized <- (y - y_mean) / y_stddev
+  
+  # Compute the numerator and denominator for the slope
+  numerator <- sum(x_normalized * y_normalized)
+  denominator <- sum(x_normalized^2)
+  
+  # Calculate and return the slope
+  return(numerator / denominator)
+}
 
 dat<-read.table(paste("/home/users/nus/e0950183/scratch/brain_major_sub/result/analysis/",cell,".add_gene_sum",sep=""),sep="\t")
 
@@ -12,18 +40,26 @@ newdat<-dat[num,]
 pheno_name<-read.table(paste("/data/projects/11003054/e0950183/brain_sQTL_AD_sex_cell_biased/AD_biased/",cell,"_pheno_name.txt",sep=""))
 geno_name<-read.table("/data/projects/11003054/e0950183/brain_sQTL_AD_sex_cell_biased/AD_biased/geno_name.txt",sep="\t")
 
-PC<-read.table(paste("/home/users/nus/e0950183/scratch/brain_major_sub/PC/",cell,".PC",sep=""),sep="\t",header=TRUE,check.names=FALSE)
+PC<-read.table(paste("/data/projects/11003054/e0950183/brain_sQTL/PC/PC/",cell,".PC",sep=""),sep="\t",header=TRUE,check.names=FALSE)
 final_result<-as.data.frame(matrix(NA,nrow(newdat),11))
 final_result$V1<-newdat$V1
 final_result$V2<-newdat$V2
-final_result$V3<-newdat$V9
+final_result$V3<-newdat$V8
 final_result$V4<-newdat$V3
 
-for(i in 1:nrow(newdat)){
+start=1000*test-999
+end=1000*test
+if(end>nrow(newdat)){end=nrow(newdat)}
+
+for(i in start:end){
     print(i)
-    pheno<-read.table(paste("/data/projects/11003054/e0950183/brain_sQTL_AD_sex_cell_biased/AD_biased/phenotype/",cell,"/",newdat[i,1],".txt",sep=""),sep=" ",row.names=1)
+    pheno<-read.table(paste("/home/users/nus/e0950183/scratch/brain_AD_sex/phenotype/",cell,"/",newdat[i,1],".txt",sep=""),sep=" ",row.names=1)
     colnames(pheno)<-pheno_name$V1
-    geno<-read.table(paste("/data/projects/11003054/e0950183/brain_sQTL_AD_sex_cell_biased/AD_biased/genotype/",cell,"/",newdat[i,2],".txt",sep=""),sep="\t")
+    
+    pheno_beta_compute<-read.table(paste("/home/users/nus/e0950183/scratch/brain_major_sub/result/major/",cell,"_model/",newdat[i,1],".middle",sep=""),skip=1,row.names=1)
+    pheno_revise<-(pheno_beta_compute[4,]/pheno_beta_compute[3,]) - pheno_beta_compute[2,]
+
+    geno<-read.table(paste("/home/users/nus/e0950183/scratch/brain_AD_sex/genotype/",cell,"/",newdat[i,2],".txt",sep=""),sep="\t")
     pos<-strsplit(newdat[i,2],":")[[1]][2]
     num_pos<-which(geno[,2]==pos)
     geno<-geno[num_pos,]
@@ -70,28 +106,54 @@ for(i in 1:nrow(newdat)){
     geno_sex=as.numeric(total[4,])*as.numeric(PC[14,])
     )
     model_data$fal<-model_data$tot-model_data$suc
+    ###Perform subsample to AD
+    AD_male<-intersect(which(model_data$sex==1),which(model_data$AD==1))
+    nonAD_male<-intersect(which(model_data$sex==1),which(model_data$AD==0))
+    if(length(AD_male)>length(nonAD_male)){
+        newAD_male<-AD_male[sample(1:length(AD_male),length(nonAD_male))]
+        new_sample_male<-c(newAD_male,nonAD_male)
+    }else{
+        newnonAD_male<-nonAD_male[sample(1:length(nonAD_male),length(AD_male))]
+        new_sample_male<-c(newnonAD_male,AD_male)
+    }
+    AD_female<-intersect(which(model_data$sex==2),which(model_data$AD==1))
+    nonAD_female<-intersect(which(model_data$sex==2),which(model_data$AD==0))
+    
+    if(length(AD_female)>length(nonAD_female)){
+        newAD_female<-AD_female[sample(1:length(AD_female),length(nonAD_female))]
+        new_sample_female<-c(newAD_female,nonAD_female)
+    }else{
+        newnonAD_female<-nonAD_female[sample(1:length(nonAD_female),length(AD_female))]
+        new_sample_female<-c(newnonAD_female,AD_female)
+    }
+    new_sample<-c(new_sample_male,new_sample_female)
+    model_data<-model_data[new_sample,]
+    pheno_revise<-pheno_revise[new_sample]
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
-        sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + geno_sex + (1|group), 
+        sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + geno_sex+(1|group), 
                data = model_data, 
-               family = binomial(link = "logit"))
+               family = binomial)
     final_result$V5[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
     final_result$V6[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno_sex']
     num<-which(model_data$sex==1)
     newmodel<-model_data[num,]
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
-        AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+ (1|group), 
+        AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group), 
                data = newmodel, 
-               family = binomial(link = "logit"))
+               family = binomial)
     final_result$V8[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
-    final_result$V10[i]<-lm.beta(model)['geno']
+    final_result$V10[i]<-computeRegressionSlope(as.numeric(pheno_revise[num]),as.numeric(newmodel$geno))
     num<-which(model_data$sex==2)
     newmodel<-model_data[num,]
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
-        AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+ (1|group), 
+        AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group), 
                data = newmodel, 
-               family = binomial(link = "logit"))
+               family = binomial)
     final_result$V9[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
-    final_result$V11[i]<-lm.beta(model)['geno']
+    final_result$V11[i]<-computeRegressionSlope(as.numeric(pheno_revise[num]),as.numeric(newmodel$geno))
 }
 
+final_result<-final_result[start:end,]
 final_result$V7<-p.adjust(final_result$V6,method="fdr",n=nrow(final_result))
+
+write.table(final_result,paste("/home/users/nus/e0950183/scratch/brain_AD_sex/result/",cell,"_result_sex",test,sep=""),sep="\t",row.names=FALSE,col.names=FALSE,quote=FALSE)
