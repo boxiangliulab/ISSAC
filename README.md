@@ -19,7 +19,7 @@ conda install -c bioconda htslib=1.3
 
 Download ISSAC original code to your directroy:
 ```
-git clone --branch master https://github.com/tibettiger/ISSAC.git
+git clone --branch master https://github.com/boxiangliulab/ISSAC.git
 cd ISSAC/build
 cmake ..
 make
