@@ -365,7 +365,10 @@ chr6:-:100847625        chr6:100352961:G:A      0.882403        0.00847691      
 chr6:-:100847625        chr6:100353644:A:T      0.283973        0.0126006       0.0117604
 ```
 
+## differential splicing after null model construction 
 
+
+## Trans-sQTL identification
 
 
 
