@@ -366,6 +366,7 @@ chr6:-:100847625        chr6:100353644:A:T      0.283973        0.0126006       
 ```
 
 ## Differential splicing after null model construction 
+The null model construction results and the group information of each metacell were used for differential splicing analysis.
 ```
 $ISSAC DS
        -s *.site ###deposit site list (from the first step model construction)
@@ -387,6 +388,7 @@ Note, the .group file should be shown as below:
 2
 ```
 ## Trans-sQTL identification
+Trans-sQTL part was designed for testing associations between splice site usage ratio and SNPs located distant from the splice site.
 ```
 $ISSAC trans_QTL   
        -s *.site ###deposit site list (from the first step model construction)
