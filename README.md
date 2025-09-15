@@ -366,10 +366,39 @@ chr6:-:100847625        chr6:100353644:A:T      0.283973        0.0126006       
 ```
 
 ## Differential splicing after null model construction 
-
-
+```
+$ISSAC DS
+       -s *.site ###deposit site list (from the first step model construction)
+       -p $model_file_pos  ## the model files position  
+       -m  *.common ## the sample names of phenotype and PC  file   
+       -x *.PC   ## PC file  
+       -g *.group ## deposit the group of corresponding samples; should be 0 (one group) & 2 (another group)
+       -o $output_pos   ##the output file’s position  
+```
+Note, the .group file should be shown as below:
+```
+0
+0
+2
+2
+0
+2
+2
+2
+```
 ## Trans-sQTL identification
-
+```
+$ISSAC trans_QTL   
+       -s *.site ###deposit site list (from the first step model construction)
+       -p $model_file_pos  ## the model files position  
+       -m  *.common ## the sample names of phenotype and PC  file   
+       -x *.PC   ## PC file
+       -c chr${i} ## the chromosome of splice sites
+       -v chr${i}.recode.bcf ## genotype file
+       -w *.variant ## deposit variant id you want to test
+       -o $output_pos   ##the output file’s position  
+       -t 1  ##the sQTLs with pvalue less than this threshold will be output to result files 
+```
 
 
 
