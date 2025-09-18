@@ -339,7 +339,8 @@ ISSAC QTL mapping:
 ```
 $ISSAC QTL   
        -p $model_file_pos  ## the model files position  
-       -m  *.common ## the sample names of phenotype and PC  file  
+       -m  *.common ## the sample names of phenotype and PC  file
+       -s *.site ## deposit site list you wanted to test the association 
        -c chr${i} ## the chromosome of splice sites  
        -x *.PC   ##PC file  
        -v chr${i}.recode.bcf ## genotype file  
