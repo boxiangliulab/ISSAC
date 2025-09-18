@@ -14,8 +14,8 @@ CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o
  ../utils/htslib/htslib/kstring.h
  ../utils/htslib/htslib/sam.h
  ../utils/htslib/htslib/tbx.h
- /home/users/nus/e0950183/code/ISSAC/IR_denominator_quant.cpp
- /home/users/nus/e0950183/code/ISSAC/IR_denominator_quant.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/IR_denominator_quant.cpp
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/IR_denominator_quant.h
 CMakeFiles/ISSAC.dir/eigen_decom.cpp.o
  ../utils/htslib/htslib/faidx.h
  ../utils/htslib/htslib/hts.h
@@ -301,8 +301,8 @@ CMakeFiles/ISSAC.dir/eigen_decom.cpp.o
  /home/users/nus/e0950183/ISSAC_env/include/eigen3/Eigen/src/plugins/CommonCwiseUnaryOps.h
  /home/users/nus/e0950183/ISSAC_env/include/eigen3/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  /home/users/nus/e0950183/ISSAC_env/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/users/nus/e0950183/code/ISSAC/eigen_decom.cpp
- /home/users/nus/e0950183/code/ISSAC/eigen_decom.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/eigen_decom.cpp
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/eigen_decom.h
 CMakeFiles/ISSAC.dir/junc_stat.cpp.o
  ../utils/bedtools/bedFile/bedFile.h
  ../utils/bedtools/fileType/fileType.h
@@ -310,8 +310,8 @@ CMakeFiles/ISSAC.dir/junc_stat.cpp.o
  ../utils/bedtools/lineFileUtilities/lineFileUtilities.h
  ../utils/htslib/htslib/hts.h
  ../utils/htslib/htslib/sam.h
- /home/users/nus/e0950183/code/ISSAC/junc_stat.cpp
- /home/users/nus/e0950183/code/ISSAC/junctions_extractor.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/junc_stat.cpp
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/junctions_extractor.h
 CMakeFiles/ISSAC.dir/junctions_extractor.cc.o
  ../utils/bedtools/bedFile/bedFile.h
  ../utils/bedtools/fileType/fileType.h
@@ -324,8 +324,8 @@ CMakeFiles/ISSAC.dir/junctions_extractor.cc.o
  ../utils/htslib/htslib/kstring.h
  ../utils/htslib/htslib/sam.h
  ../utils/htslib/htslib/tbx.h
- /home/users/nus/e0950183/code/ISSAC/junctions_extractor.cc
- /home/users/nus/e0950183/code/ISSAC/junctions_extractor.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/junctions_extractor.cc
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/junctions_extractor.h
 CMakeFiles/ISSAC.dir/main.cpp.o
  ../gtf/gtf_parser.h
  ../utils/bedtools/bedFile/bedFile.h
@@ -616,11 +616,11 @@ CMakeFiles/ISSAC.dir/main.cpp.o
  /home/users/nus/e0950183/ISSAC_env/include/eigen3/Eigen/src/plugins/CommonCwiseUnaryOps.h
  /home/users/nus/e0950183/ISSAC_env/include/eigen3/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  /home/users/nus/e0950183/ISSAC_env/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h
- /home/users/nus/e0950183/code/ISSAC/IR_denominator_quant.h
- /home/users/nus/e0950183/code/ISSAC/eigen_decom.h
- /home/users/nus/e0950183/code/ISSAC/junctions_extractor.h
- /home/users/nus/e0950183/code/ISSAC/main.cpp
- /home/users/nus/e0950183/code/ISSAC/pheno.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/IR_denominator_quant.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/eigen_decom.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/junctions_extractor.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/main.cpp
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/pheno.h
 CMakeFiles/ISSAC.dir/phenotype_group.cpp.o
  ../utils/bedtools/bedFile/bedFile.h
  ../utils/bedtools/fileType/fileType.h
@@ -628,8 +628,8 @@ CMakeFiles/ISSAC.dir/phenotype_group.cpp.o
  ../utils/bedtools/lineFileUtilities/lineFileUtilities.h
  ../utils/htslib/htslib/hts.h
  ../utils/htslib/htslib/sam.h
- /home/users/nus/e0950183/code/ISSAC/pheno.h
- /home/users/nus/e0950183/code/ISSAC/phenotype_group.cpp
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/pheno.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/phenotype_group.cpp
 CMakeFiles/ISSAC.dir/phenotype_output.cpp.o
  ../utils/bedtools/bedFile/bedFile.h
  ../utils/bedtools/fileType/fileType.h
@@ -637,5 +637,5 @@ CMakeFiles/ISSAC.dir/phenotype_output.cpp.o
  ../utils/bedtools/lineFileUtilities/lineFileUtilities.h
  ../utils/htslib/htslib/hts.h
  ../utils/htslib/htslib/sam.h
- /home/users/nus/e0950183/code/ISSAC/pheno.h
- /home/users/nus/e0950183/code/ISSAC/phenotype_output.cpp
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/pheno.h
+ /home/users/nus/e0950183/code/ISSAC_another_normalize/phenotype_output.cpp

@@ -1,4 +1,4 @@
-# Install script for directory: /home/users/nus/e0950183/code/ISSAC
+# Install script for directory: /home/users/nus/e0950183/code/ISSAC_another_normalize
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/users/nus/e0950183/code/ISSAC/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/users/nus/e0950183/code/ISSAC_another_normalize/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

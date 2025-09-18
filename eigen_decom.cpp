@@ -669,8 +669,8 @@ int DS_parse_options(int argc, char *argv[]) {
     optind = 1; //Reset before parsing again.
     int c;
     stringstream help_ss;
-    string output_file_,site_list_,common_sample_file,path_,output_path_,output_prefix_,group_file_;
-    while((c = getopt(argc, argv, "hs:o:p:m:g:")) != -1) {
+    string output_file_,site_list_,common_sample_file,path_,output_path_,output_prefix_,group_file_,X_;
+    while((c = getopt(argc, argv, "hs:o:p:m:x:g:")) != -1) {
         switch(c) {
             case 'h':
                 cout<<"help"<<endl;
@@ -686,6 +686,9 @@ int DS_parse_options(int argc, char *argv[]) {
             case 'p':
                 path_ = string(optarg);
                 break;
+            case 'x':
+                X_ = string(optarg);
+                break;
             case 'o':
                 output_path_ = string(optarg);
                 break;
@@ -698,6 +701,7 @@ int DS_parse_options(int argc, char *argv[]) {
     cerr << "Path: " << path_ << endl;
     cerr << "Output path: " << output_path_ << endl;
     cerr << "Group file: " << group_file_ << endl;
+    cerr << "covariate: " << X_ << endl;
     cerr << endl;
 
     //read in splice site
@@ -729,6 +733,20 @@ int DS_parse_options(int argc, char *argv[]) {
     string tmp_1,tmp_2;
     string tmp_val;
     double val;
+    
+    QTL_mapping it;
+    it.set_PC(X_);
+    //set PC name
+    vector<Eigen::VectorXd> test_PC=it.read_in_PC();
+    int row = test_PC[0].size();
+    int col = test_PC.size();
+    cout<<row<<"\t"<<col<<endl;
+    Eigen::MatrixXd PCXd(row,col);
+
+    for(int i = 0;i<col;i++){
+        PCXd.col(i) = test_PC[i];
+    }
+    Eigen::MatrixXd X_cons = it.addConstant(PCXd); 
     for(int s=0;s<sitelist.size();s++){
         ifstream fin1;
         fin1.open(path_+"/"+sitelist[s]+".middle");
@@ -777,7 +795,7 @@ int DS_parse_options(int argc, char *argv[]) {
         //random initialize eta,beta_hat,u_hat,mat;
         Eigen::VectorXd eta, beta_hat, u_hat = Eigen::VectorXd::Zero(2);
         Eigen::SparseMatrix<double> result(2,2);
-        Eigen::MatrixXd mat(3,3),X_cons(3,3);
+        Eigen::MatrixXd mat(3,3);
         REMLOptimizer tmp(eta, X_cons, beta_hat, u_hat, vectors_val_PC[3], vectors_val_PC[2], result, 10, 1e-3,mat,0);
         string output_file=output_path_+"/"+sitelist[s]+".DS_result";
         tmp.DS(output_file, site_name, dispersion,group, vectors_val_PC[0],vectors_val_PC[1],vectors_val_PC[2],vectors_val_PC[3]);

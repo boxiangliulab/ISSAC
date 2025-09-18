@@ -588,6 +588,8 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         uniform_int_distribution<> dis(0, 2); // Uniform distribution between 0 and 2
         double score_vector, info_matrix, test_statistic, variance;
         Eigen::VectorXd genotype, g;
+	double observed=0;
+	double expected=0;
         for(int i=0;i<times;i++){
             test_statistics.clear();
             for(int j=0;j<100;j++){
@@ -606,13 +608,16 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
             // Test statistic
             test_statistic = score_vector / std::sqrt(info_matrix);
             test_statistics.push_back(test_statistic);
-            }
+            observed=observed+score_vector*score_vector;
+	    expected=expected+info_matrix;
+	    }
             variance = calculate_stddev(test_statistics);
             vari_total.push_back(variance);
         }
         double vari_mean = std::accumulate(vari_total.begin(), vari_total.end(), 0.0) / vari_total.size();
         cout<<"normalize:"<<vari_mean<<endl;
-        return vari_mean;
+	cout<<"normalize2:"<<std::sqrt(observed/expected)<<endl;
+        return std::sqrt(observed/expected);
     }
 
     void compute(string output_path, string site){  
@@ -752,9 +757,17 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         for(size_t i=0;i<group.size();i++){
             group_double[i]=static_cast<double>(group[i]);
         }
+        Eigen::VectorXd W_vec = ((pi.array()*(1-pi.array()))).matrix();
+        Eigen::MatrixXd W_diag = W_vec.asDiagonal();
+        W_ = W_diag.sparseView();
+        Eigen::MatrixXd X_T_W_X = (X.transpose()*W_) * X;
+        cout<<"rows for X_T_W_X"<<X_T_W_X.rows()<<"\t"<<X_T_W_X.rows()<<endl;
+        Eigen::MatrixXd X_T_W_X_inv = X_T_W_X.inverse();
+        Eigen::MatrixXd X_T_W = X.transpose() * W_;
+        Eigen::MatrixXd covariate_adjusted_geno = X*(X_T_W_X_inv*X_T_W);
     // Copy values from std::vector to Eigen::VectorXd
-            //Eigen::VectorXd geno = g_vec - covariate_adjusted_geno * g_vec;
-        Eigen::VectorXd group_new = group_double.array() - group_double.mean();
+        Eigen::VectorXd geno_double = group_double - covariate_adjusted_geno * group_double;
+        Eigen::VectorXd group_new = geno_double.array() - geno_double.mean();
             // Compute score vector and info matrix
         double score_vector = (residuals.array() * group_new.array()).sum();
             //double info_matrix = (genotype.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
