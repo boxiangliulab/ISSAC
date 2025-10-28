@@ -29,6 +29,7 @@ computeRegressionSlope <- function(x, y) {
 
 ### read in phenotype
 library(lme4)
+library(glmmTMB)
 library(QuantPsyc)
 cell<-"Inhibitory"
 
@@ -125,6 +126,10 @@ for(i in start:end){
         sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + state + geno_state+(1|group), 
                data = model_data, 
                family = binomial(link="logit"))
+    #model <- glmmTMB(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
+    #    sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + state + geno_state+(1|group), 
+    #           data = model_data, 
+    #           family = binomial)
     final_result$V5[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
     final_result$V6[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno_state']
     ###define state PC threshold
