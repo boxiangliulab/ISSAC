@@ -94,7 +94,9 @@ junc_pos=/directory/junc ## the directory of all the .stat file
 sample_file=*_sample ## deposit the sample name
 out_file_prefix=* ## the output file’s prefix
 log_out=* # the log file of intermediate results
-$ISSAC pheno_group $sample_file $junc_pos $out_file_prefix $read_threshold $log_out
+min_intron_len=50
+max_intron_len=10000
+$ISSAC pheno_group $sample_file $junc_pos $out_file_prefix $read_threshold $log_out $min_intron_len $max_intron_len
 ```
 
 Output of ISSAC pheno_group include 4 files;
