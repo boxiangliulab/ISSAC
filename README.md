@@ -21,6 +21,7 @@ Download ISSAC original code to your directroy:
 ```
 git clone --branch master https://github.com/boxiangliulab/ISSAC.git
 cd ISSAC/build
+rm -rf *
 cmake ..
 make
 ./ISSAC -h
