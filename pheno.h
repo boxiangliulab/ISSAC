@@ -24,6 +24,13 @@ pair<map<int,set<string>>,map<int,set<string>>> site_anno(set<int> site, map<int
 void site_detection(map<string,vector<string>> cluster_intron, map<string,vector<int>> intron_read_map, vector<string> sample_name, string inclu_exclu_out, string site_readcount);
 int pheno_group(int argc,char* argv[]);
 
+map<string,vector<int>> obtain_splice_intron(vector<string> sample,vector<string> site,string intron_file);
+map<string,vector<int>> read_in_file(vector<string> sample,vector<string> site,string file_pos,map<string,vector<int>> site_used);
+map<string,vector<string>> filter_output(map<string,vector<int>> site_used,map<string,vector<int>> site_unused);
+void print_IR(map<string,vector<string>> output_site,string out_file_prefix,vector<string> sample);
+int IR_combine(int argc,char* argv[]);
+
+
 
 
 #endif

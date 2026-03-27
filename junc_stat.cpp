@@ -23,13 +23,35 @@ vector<string> split(const string& str,const string& sep) {
 }
 
 int juncstat(int argc,char* argv[]){
-    if(argc!=4){
-        cerr<<"Usage: "<<argv[0]<<endl;
-        return 1;
-    }
-    string barcode_file=argv[1];
-    string junc_file=argv[2];
-    string out_file=argv[3];
+    string barcode_file, junc_file, out_file;
+    int c;
+    while ((c = getopt(argc, argv, "hb:j:o:")) != -1) {
+    switch (c) {
+        case 'h':
+            cout << "Usage: " << argv[0] << " [options]\n\n"
+                 << "Options:\n"
+                 << "  -h          Show this help message and exit\n"
+                 << "  -b <file>   Barcode file\n"
+                 << "  -j <file>   Junction file\n"
+                 << "  -o <file>   Output file\n";
+            exit(0);
+        case 'b':
+            barcode_file = string(optarg);
+            break;
+        case 'j':
+            junc_file = string(optarg);
+            break;
+        case 'o':
+            out_file = string(optarg);
+            break;
+        case '?':
+        default:
+            throw runtime_error("Error parsing inputs!\n\n");
+    }}
+    if (barcode_file.empty() || junc_file.empty() || out_file.empty()) {
+    cerr << "Error: options -b, -j, -o are all required.\n"
+         << "Run with -h for usage.\n";
+    return 1;}
     //read in barcode info
     ifstream fin;
     fin.open(barcode_file);

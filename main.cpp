@@ -67,6 +67,9 @@ int main(int argc, char* argv[]) {
         else if(subcmd == "IR") {
             return IR_main(argc - 1, argv + 1);
         }
+        else if(subcmd == "IR_combine") {
+            return IR_combine(argc - 1, argv + 1);
+        }
         else if(subcmd == "model") {
             return model(argc - 1, argv + 1);
         }
@@ -84,6 +87,9 @@ int main(int argc, char* argv[]) {
         }
         else if(subcmd == "pheno_output"){
             return pheno_output(argc - 1, argv+1);
+        }
+        else if(subcmd == "rare_variant"){
+            return rare_mapping(argc - 1, argv+1);
         }
     }
     return usage();

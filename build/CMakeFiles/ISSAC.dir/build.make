@@ -62,10 +62,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/users/nus/e0950183/code/ISSAC_another_normalize
+CMAKE_SOURCE_DIR = /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/users/nus/e0950183/code/ISSAC_another_normalize/build
+CMAKE_BINARY_DIR = /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/ISSAC.dir/depend.make
@@ -78,94 +78,120 @@ include CMakeFiles/ISSAC.dir/flags.make
 
 CMakeFiles/ISSAC.dir/eigen_decom.cpp.o: CMakeFiles/ISSAC.dir/flags.make
 CMakeFiles/ISSAC.dir/eigen_decom.cpp.o: ../eigen_decom.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/ISSAC.dir/eigen_decom.cpp.o"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/eigen_decom.cpp.o -c /home/users/nus/e0950183/code/ISSAC_another_normalize/eigen_decom.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/ISSAC.dir/eigen_decom.cpp.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/eigen_decom.cpp.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/eigen_decom.cpp
 
 CMakeFiles/ISSAC.dir/eigen_decom.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/eigen_decom.cpp.i"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/users/nus/e0950183/code/ISSAC_another_normalize/eigen_decom.cpp > CMakeFiles/ISSAC.dir/eigen_decom.cpp.i
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/eigen_decom.cpp > CMakeFiles/ISSAC.dir/eigen_decom.cpp.i
 
 CMakeFiles/ISSAC.dir/eigen_decom.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/eigen_decom.cpp.s"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/users/nus/e0950183/code/ISSAC_another_normalize/eigen_decom.cpp -o CMakeFiles/ISSAC.dir/eigen_decom.cpp.s
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/eigen_decom.cpp -o CMakeFiles/ISSAC.dir/eigen_decom.cpp.s
 
 CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o: CMakeFiles/ISSAC.dir/flags.make
 CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o: ../IR_denominator_quant.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o -c /home/users/nus/e0950183/code/ISSAC_another_normalize/IR_denominator_quant.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/IR_denominator_quant.cpp
 
 CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.i"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/users/nus/e0950183/code/ISSAC_another_normalize/IR_denominator_quant.cpp > CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.i
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/IR_denominator_quant.cpp > CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.i
 
 CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.s"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/users/nus/e0950183/code/ISSAC_another_normalize/IR_denominator_quant.cpp -o CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.s
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/IR_denominator_quant.cpp -o CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.s
 
 CMakeFiles/ISSAC.dir/phenotype_group.cpp.o: CMakeFiles/ISSAC.dir/flags.make
 CMakeFiles/ISSAC.dir/phenotype_group.cpp.o: ../phenotype_group.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/ISSAC.dir/phenotype_group.cpp.o"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/phenotype_group.cpp.o -c /home/users/nus/e0950183/code/ISSAC_another_normalize/phenotype_group.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/ISSAC.dir/phenotype_group.cpp.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/phenotype_group.cpp.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/phenotype_group.cpp
 
 CMakeFiles/ISSAC.dir/phenotype_group.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/phenotype_group.cpp.i"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/users/nus/e0950183/code/ISSAC_another_normalize/phenotype_group.cpp > CMakeFiles/ISSAC.dir/phenotype_group.cpp.i
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/phenotype_group.cpp > CMakeFiles/ISSAC.dir/phenotype_group.cpp.i
 
 CMakeFiles/ISSAC.dir/phenotype_group.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/phenotype_group.cpp.s"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/users/nus/e0950183/code/ISSAC_another_normalize/phenotype_group.cpp -o CMakeFiles/ISSAC.dir/phenotype_group.cpp.s
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/phenotype_group.cpp -o CMakeFiles/ISSAC.dir/phenotype_group.cpp.s
 
 CMakeFiles/ISSAC.dir/phenotype_output.cpp.o: CMakeFiles/ISSAC.dir/flags.make
 CMakeFiles/ISSAC.dir/phenotype_output.cpp.o: ../phenotype_output.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/ISSAC.dir/phenotype_output.cpp.o"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/phenotype_output.cpp.o -c /home/users/nus/e0950183/code/ISSAC_another_normalize/phenotype_output.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/ISSAC.dir/phenotype_output.cpp.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/phenotype_output.cpp.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/phenotype_output.cpp
 
 CMakeFiles/ISSAC.dir/phenotype_output.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/phenotype_output.cpp.i"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/users/nus/e0950183/code/ISSAC_another_normalize/phenotype_output.cpp > CMakeFiles/ISSAC.dir/phenotype_output.cpp.i
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/phenotype_output.cpp > CMakeFiles/ISSAC.dir/phenotype_output.cpp.i
 
 CMakeFiles/ISSAC.dir/phenotype_output.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/phenotype_output.cpp.s"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/users/nus/e0950183/code/ISSAC_another_normalize/phenotype_output.cpp -o CMakeFiles/ISSAC.dir/phenotype_output.cpp.s
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/phenotype_output.cpp -o CMakeFiles/ISSAC.dir/phenotype_output.cpp.s
+
+CMakeFiles/ISSAC.dir/IR_combine.cpp.o: CMakeFiles/ISSAC.dir/flags.make
+CMakeFiles/ISSAC.dir/IR_combine.cpp.o: ../IR_combine.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/ISSAC.dir/IR_combine.cpp.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/IR_combine.cpp.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/IR_combine.cpp
+
+CMakeFiles/ISSAC.dir/IR_combine.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/IR_combine.cpp.i"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/IR_combine.cpp > CMakeFiles/ISSAC.dir/IR_combine.cpp.i
+
+CMakeFiles/ISSAC.dir/IR_combine.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/IR_combine.cpp.s"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/IR_combine.cpp -o CMakeFiles/ISSAC.dir/IR_combine.cpp.s
+
+CMakeFiles/ISSAC.dir/rare_variant.cpp.o: CMakeFiles/ISSAC.dir/flags.make
+CMakeFiles/ISSAC.dir/rare_variant.cpp.o: ../rare_variant.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/ISSAC.dir/rare_variant.cpp.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/rare_variant.cpp.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/rare_variant.cpp
+
+CMakeFiles/ISSAC.dir/rare_variant.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/rare_variant.cpp.i"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/rare_variant.cpp > CMakeFiles/ISSAC.dir/rare_variant.cpp.i
+
+CMakeFiles/ISSAC.dir/rare_variant.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/rare_variant.cpp.s"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/rare_variant.cpp -o CMakeFiles/ISSAC.dir/rare_variant.cpp.s
 
 CMakeFiles/ISSAC.dir/junc_stat.cpp.o: CMakeFiles/ISSAC.dir/flags.make
 CMakeFiles/ISSAC.dir/junc_stat.cpp.o: ../junc_stat.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/ISSAC.dir/junc_stat.cpp.o"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/junc_stat.cpp.o -c /home/users/nus/e0950183/code/ISSAC_another_normalize/junc_stat.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/ISSAC.dir/junc_stat.cpp.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/junc_stat.cpp.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/junc_stat.cpp
 
 CMakeFiles/ISSAC.dir/junc_stat.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/junc_stat.cpp.i"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/users/nus/e0950183/code/ISSAC_another_normalize/junc_stat.cpp > CMakeFiles/ISSAC.dir/junc_stat.cpp.i
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/junc_stat.cpp > CMakeFiles/ISSAC.dir/junc_stat.cpp.i
 
 CMakeFiles/ISSAC.dir/junc_stat.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/junc_stat.cpp.s"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/users/nus/e0950183/code/ISSAC_another_normalize/junc_stat.cpp -o CMakeFiles/ISSAC.dir/junc_stat.cpp.s
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/junc_stat.cpp -o CMakeFiles/ISSAC.dir/junc_stat.cpp.s
 
 CMakeFiles/ISSAC.dir/junctions_extractor.cc.o: CMakeFiles/ISSAC.dir/flags.make
 CMakeFiles/ISSAC.dir/junctions_extractor.cc.o: ../junctions_extractor.cc
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/ISSAC.dir/junctions_extractor.cc.o"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/junctions_extractor.cc.o -c /home/users/nus/e0950183/code/ISSAC_another_normalize/junctions_extractor.cc
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/ISSAC.dir/junctions_extractor.cc.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/junctions_extractor.cc.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/junctions_extractor.cc
 
 CMakeFiles/ISSAC.dir/junctions_extractor.cc.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/junctions_extractor.cc.i"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/users/nus/e0950183/code/ISSAC_another_normalize/junctions_extractor.cc > CMakeFiles/ISSAC.dir/junctions_extractor.cc.i
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/junctions_extractor.cc > CMakeFiles/ISSAC.dir/junctions_extractor.cc.i
 
 CMakeFiles/ISSAC.dir/junctions_extractor.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/junctions_extractor.cc.s"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/users/nus/e0950183/code/ISSAC_another_normalize/junctions_extractor.cc -o CMakeFiles/ISSAC.dir/junctions_extractor.cc.s
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/junctions_extractor.cc -o CMakeFiles/ISSAC.dir/junctions_extractor.cc.s
 
 CMakeFiles/ISSAC.dir/main.cpp.o: CMakeFiles/ISSAC.dir/flags.make
 CMakeFiles/ISSAC.dir/main.cpp.o: ../main.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/ISSAC.dir/main.cpp.o"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/main.cpp.o -c /home/users/nus/e0950183/code/ISSAC_another_normalize/main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/ISSAC.dir/main.cpp.o"
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ISSAC.dir/main.cpp.o -c /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/main.cpp
 
 CMakeFiles/ISSAC.dir/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ISSAC.dir/main.cpp.i"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/users/nus/e0950183/code/ISSAC_another_normalize/main.cpp > CMakeFiles/ISSAC.dir/main.cpp.i
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/main.cpp > CMakeFiles/ISSAC.dir/main.cpp.i
 
 CMakeFiles/ISSAC.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ISSAC.dir/main.cpp.s"
-	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/users/nus/e0950183/code/ISSAC_another_normalize/main.cpp -o CMakeFiles/ISSAC.dir/main.cpp.s
+	/home/users/nus/e0950183/ISSAC_env/bin/x86_64-conda-linux-gnu-c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/main.cpp -o CMakeFiles/ISSAC.dir/main.cpp.s
 
 # Object files for target ISSAC
 ISSAC_OBJECTS = \
@@ -173,6 +199,8 @@ ISSAC_OBJECTS = \
 "CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o" \
 "CMakeFiles/ISSAC.dir/phenotype_group.cpp.o" \
 "CMakeFiles/ISSAC.dir/phenotype_output.cpp.o" \
+"CMakeFiles/ISSAC.dir/IR_combine.cpp.o" \
+"CMakeFiles/ISSAC.dir/rare_variant.cpp.o" \
 "CMakeFiles/ISSAC.dir/junc_stat.cpp.o" \
 "CMakeFiles/ISSAC.dir/junctions_extractor.cc.o" \
 "CMakeFiles/ISSAC.dir/main.cpp.o"
@@ -184,6 +212,8 @@ ISSAC: CMakeFiles/ISSAC.dir/eigen_decom.cpp.o
 ISSAC: CMakeFiles/ISSAC.dir/IR_denominator_quant.cpp.o
 ISSAC: CMakeFiles/ISSAC.dir/phenotype_group.cpp.o
 ISSAC: CMakeFiles/ISSAC.dir/phenotype_output.cpp.o
+ISSAC: CMakeFiles/ISSAC.dir/IR_combine.cpp.o
+ISSAC: CMakeFiles/ISSAC.dir/rare_variant.cpp.o
 ISSAC: CMakeFiles/ISSAC.dir/junc_stat.cpp.o
 ISSAC: CMakeFiles/ISSAC.dir/junctions_extractor.cc.o
 ISSAC: CMakeFiles/ISSAC.dir/main.cpp.o
@@ -193,7 +223,7 @@ ISSAC: /home/users/nus/e0950183/ISSAC_env/lib/libgsl.so
 ISSAC: /home/users/nus/e0950183/ISSAC_env/lib/libnlopt.so.0.12.0
 ISSAC: /home/users/nus/e0950183/ISSAC_env/lib/libcrypto.so
 ISSAC: CMakeFiles/ISSAC.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable ISSAC"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable ISSAC"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/ISSAC.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -206,6 +236,6 @@ CMakeFiles/ISSAC.dir/clean:
 .PHONY : CMakeFiles/ISSAC.dir/clean
 
 CMakeFiles/ISSAC.dir/depend:
-	cd /home/users/nus/e0950183/code/ISSAC_another_normalize/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/users/nus/e0950183/code/ISSAC_another_normalize /home/users/nus/e0950183/code/ISSAC_another_normalize /home/users/nus/e0950183/code/ISSAC_another_normalize/build /home/users/nus/e0950183/code/ISSAC_another_normalize/build /home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles/ISSAC.dir/DependInfo.cmake --color=$(COLOR)
+	cd /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25 /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25 /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles/ISSAC.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/ISSAC.dir/depend
 

@@ -344,18 +344,54 @@ void site_detection(map<string,vector<string>> cluster_intron, map<string,vector
 
 
 int pheno_group(int argc,char* argv[]){
-    if(argc!=6){
-        cerr<<"Usage: "<<argv[0]<<endl;
-        cerr << "Usage:\t\t" << "site-based quantification <command> [options]" << endl;
-        cerr << "Command:\t" << "splice site partner definition" << endl;
-        cerr << endl;
-        return 1;
-    }
-    string sample_file=argv[1];
-    string junc_pos=argv[2];
-    string out_file_prefix=argv[3];
-    string threshold_read=argv[4]; //
-    string log_out=argv[5]; //
+    string sample_file, junc_pos, out_file_prefix, threshold_read, log_out;
+    int min_len = 0, max_len = 0;
+    int c;
+    while ((c = getopt(argc, argv, "hs:j:o:t:l:n:x:")) != -1) {
+    switch (c) {
+        case 'h':
+            cout << "Usage: " << argv[0] << " [options]\n"
+                 << "Description: Site-based quantification — splice site partner definition\n\n"
+                 << "Options:\n"
+                 << "  -h          Show this help message and exit\n"
+                 << "  -s <file>   Sample file\n"
+                 << "  -j <file>   Junction position file\n"
+                 << "  -o <prefix> Output file prefix\n"
+                 << "  -t <val>    Read count threshold\n"
+                 << "  -l <file>   Log output file\n"
+                 << "  -n <int>    Minimum intron length\n"
+                 << "  -x <int>    Maximum intron length\n";
+            exit(0);
+        case 's':
+            sample_file = string(optarg);
+            break;
+        case 'j':
+            junc_pos = string(optarg);
+            break;
+        case 'o':
+            out_file_prefix = string(optarg);
+            break;
+        case 't':
+            threshold_read = string(optarg);
+            break;
+        case 'l':
+            log_out = string(optarg);
+            break;
+        case 'n':
+            min_len = stoi(string(optarg));
+            break;
+        case 'x':
+            max_len = stoi(string(optarg));
+            break;
+        case '?':
+        default:
+            throw runtime_error("Error parsing inputs!\n\n");
+    }}
+    if (sample_file.empty() || junc_pos.empty() || out_file_prefix.empty() ||
+    threshold_read.empty() || log_out.empty() || min_len == 0 || max_len == 0) {
+    cerr << "Error: all options -s, -j, -o, -t, -l, -n, -x are required.\n"
+         << "Run with -h for usage.\n";
+    return 1;}
     //output
     string out_file=out_file_prefix+".intron.out";
     string refined_output=out_file_prefix+".refined";
@@ -405,7 +441,13 @@ int pheno_group(int argc,char* argv[]){
     for(const auto& element:intron_set){
         int sum = accumulate(intron_read_map[element].begin(),intron_read_map[element].end(),0);
         if(sum>stoi(threshold_read)){
-            filter_intron.insert(element);
+            // filter out intron length large than a threshold
+            string intron_tmp=element.substr(element.find(":")+1);
+            string intron_tmp2=intron_tmp.substr(intron_tmp.find(":")+1);
+            string start_intron=intron_tmp2.substr(0,intron_tmp2.find(":"));
+            string end_intron=intron_tmp2.substr(intron_tmp2.find(":")+1);
+            if(((stoi(end_intron)-stoi(start_intron))>=min_len)&&((stoi(end_intron)-stoi(start_intron))<=max_len)){
+                 filter_intron.insert(element);}
         }
     }
     // cluster each intron
@@ -429,7 +471,7 @@ int pheno_group(int argc,char* argv[]){
             intron_set.insert(intron);
             num_read = line.substr(line.find("\t")+1);
             int_num_read = stoi(num_read);
-            if((int_num_read>10000)||(int_num_read<-10000))fout<<"Exception"<<sample_name[i]<<endl;
+            if(int_num_read<0)fout<<"Exception"<<sample_name[i]<<endl;
             if(filter_intron.find(intron)!=filter_intron.end()){
                 intron_read_map[intron][i] = int_num_read;
                 //intron_read_map[intron].push_back(int_num_read);

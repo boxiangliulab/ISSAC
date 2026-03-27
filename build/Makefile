@@ -67,10 +67,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/users/nus/e0950183/code/ISSAC_another_normalize
+CMAKE_SOURCE_DIR = /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/users/nus/e0950183/code/ISSAC_another_normalize/build
+CMAKE_BINARY_DIR = /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -99,9 +99,9 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles /home/users/nus/e0950183/code/ISSAC_another_normalize/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/users/nus/e0950183/code/ISSAC_another_normalize/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -141,6 +141,33 @@ ISSAC: cmake_check_build_system
 ISSAC/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ISSAC.dir/build.make CMakeFiles/ISSAC.dir/build
 .PHONY : ISSAC/fast
+
+IR_combine.o: IR_combine.cpp.o
+
+.PHONY : IR_combine.o
+
+# target to build an object file
+IR_combine.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ISSAC.dir/build.make CMakeFiles/ISSAC.dir/IR_combine.cpp.o
+.PHONY : IR_combine.cpp.o
+
+IR_combine.i: IR_combine.cpp.i
+
+.PHONY : IR_combine.i
+
+# target to preprocess a source file
+IR_combine.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ISSAC.dir/build.make CMakeFiles/ISSAC.dir/IR_combine.cpp.i
+.PHONY : IR_combine.cpp.i
+
+IR_combine.s: IR_combine.cpp.s
+
+.PHONY : IR_combine.s
+
+# target to generate assembly for a file
+IR_combine.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ISSAC.dir/build.make CMakeFiles/ISSAC.dir/IR_combine.cpp.s
+.PHONY : IR_combine.cpp.s
 
 IR_denominator_quant.o: IR_denominator_quant.cpp.o
 
@@ -331,6 +358,33 @@ phenotype_output.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ISSAC.dir/build.make CMakeFiles/ISSAC.dir/phenotype_output.cpp.s
 .PHONY : phenotype_output.cpp.s
 
+rare_variant.o: rare_variant.cpp.o
+
+.PHONY : rare_variant.o
+
+# target to build an object file
+rare_variant.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ISSAC.dir/build.make CMakeFiles/ISSAC.dir/rare_variant.cpp.o
+.PHONY : rare_variant.cpp.o
+
+rare_variant.i: rare_variant.cpp.i
+
+.PHONY : rare_variant.i
+
+# target to preprocess a source file
+rare_variant.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ISSAC.dir/build.make CMakeFiles/ISSAC.dir/rare_variant.cpp.i
+.PHONY : rare_variant.cpp.i
+
+rare_variant.s: rare_variant.cpp.s
+
+.PHONY : rare_variant.s
+
+# target to generate assembly for a file
+rare_variant.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ISSAC.dir/build.make CMakeFiles/ISSAC.dir/rare_variant.cpp.s
+.PHONY : rare_variant.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -340,6 +394,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... ISSAC"
+	@echo "... IR_combine.o"
+	@echo "... IR_combine.i"
+	@echo "... IR_combine.s"
 	@echo "... IR_denominator_quant.o"
 	@echo "... IR_denominator_quant.i"
 	@echo "... IR_denominator_quant.s"
@@ -361,6 +418,9 @@ help:
 	@echo "... phenotype_output.o"
 	@echo "... phenotype_output.i"
 	@echo "... phenotype_output.s"
+	@echo "... rare_variant.o"
+	@echo "... rare_variant.i"
+	@echo "... rare_variant.s"
 .PHONY : help
 
 

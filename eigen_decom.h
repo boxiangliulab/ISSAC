@@ -49,6 +49,8 @@ class QTL_mapping {
         // deposite chr
         string chr_;
         string GRM_num_;
+        // iterate times for normalization parameter estimation
+        int time_;
         int windowsize;
         // deposite splice read count and total read count
         map<string,vector<int>> splice_;
@@ -70,6 +72,7 @@ class QTL_mapping {
             PC_ = "NA";
             GRM_ = "NA";
             chr_ = ".";
+            time_=0;
             vcf_ = "NA";
             GRM_num_ = "NA";
         }
@@ -91,7 +94,7 @@ class QTL_mapping {
         void obtain_common_name();
         // facilitate computation
         // Binomial GLMM model training
-        void Bino_GLMM(string site,Eigen::SparseMatrix<double> result);
+        void Bino_GLMM(string site,Eigen::SparseMatrix<double> result,Eigen::SparseMatrix<double> Identity);
         
         Eigen::MatrixXd addConstant(const Eigen::MatrixXd& X);
 
@@ -241,6 +244,9 @@ public:
         double variance_eta = (eta.array()-mean_eta).square().mean();
         double log_var_eta = log(variance_eta);
         cout<<"log_var_eta\t"<<log_var_eta<<endl;
+        if(std::isnan(log_var_eta)){
+            throw std::invalid_argument("Iteration failed");
+        }
         vector<double> theta(1,log_var_eta);
         cout<<"eta"<<"\t"<<eta.head(10).transpose()<<endl;
         cout<<"pi"<<"\t"<<pi.head(10).transpose()<<endl;
@@ -579,23 +585,29 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
     }
 
 
-    double dispersion_estimate(int times, Eigen::MatrixXd covariate_adjusted_geno, Eigen::VectorXd residuals, Eigen::VectorXd pi){
+    double dispersion_estimate(int times, Eigen::MatrixXd covariate_adjusted_geno, Eigen::VectorXd residuals, Eigen::VectorXd pi,Eigen::SparseMatrix<double> Identity){
         vector<double> test_statistics;
         vector<double> pvalue;
         vector<double> vari_total;
+        const double maf = 0.5;
         random_device rd;
         mt19937 gen(rd());
-        uniform_int_distribution<> dis(0, 2); // Uniform distribution between 0 and 2
+        //uniform_int_distribution<> dis(0, 2); // Uniform distribution between 0 and 2
+        binomial_distribution<> geno_dist(2,maf);
         double score_vector, info_matrix, test_statistic, variance;
         Eigen::VectorXd genotype, g;
-	double observed=0;
-	double expected=0;
+        Eigen::VectorXd orig = Eigen::VectorXd::NullaryExpr(Identity.cols(), [&]() { return geno_dist(gen); });
+        double observed=0;
+        double expected=0;
         for(int i=0;i<times;i++){
             test_statistics.clear();
             for(int j=0;j<100;j++){
                 // Simulate random genotypes
-            genotype = Eigen::VectorXd::NullaryExpr(residuals.size(), [&]() { return dis(gen); });
-            
+            //g = Eigen::VectorXd::NullaryExpr(Identity.cols(), [&]() { return geno_dist(gen); });
+            static thread_local std::mt19937 gen(std::random_device{}());
+            std::shuffle(orig.data(), orig.data() + orig.size(), gen);
+            g=orig;
+            genotype=Identity*g;
             // Adjust genotype
             g = genotype - covariate_adjusted_geno * genotype;
             //g = genotype;
@@ -620,7 +632,7 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         return std::sqrt(observed/expected);
     }
 
-    void compute(string output_path, string site){  
+    void compute(string output_path, string site,Eigen::SparseMatrix<double> Identity,int times){  
         //Write in middle terms for pvalue computation: residuals, pi, total, y, dispersion
         //need eta, X, g, y, total
         //Compute covariate adjusted geno
@@ -635,7 +647,7 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         Eigen::VectorXd mu = pi.array()*total_.array();
         Eigen::VectorXd residuals = y_.array() - mu.array();
         cout<<"Start normalize parameter estimation"<<endl;
-        double dispersion = dispersion_estimate(10,covariate_adjusted_geno,residuals,pi);
+        double dispersion = dispersion_estimate(times,covariate_adjusted_geno,residuals,pi,Identity);
         fout<<"Splice_site"<<"\t"<<site<<"\t"<<dispersion<<"\t"<<tau_<<endl;
         fout<<"residuals"<<"\t";
         for(int i = 0;i<residuals.size();i++){
@@ -794,7 +806,368 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
     }
 
 
-   
+string get_info_as_string(bcf_hdr_t* hdr, bcf1_t* record) {
+    bcf_unpack(record, BCF_UN_INFO);
+
+    std::ostringstream infoString;
+
+    for (int i = 0; i < record->n_info; ++i) {
+        bcf_info_t* info = &record->d.info[i];
+        const char* key = bcf_hdr_int2id(hdr, BCF_DT_ID, info->key);
+
+        if (i > 0) infoString << ";"; // separate multiple INFO fields
+
+        infoString << key << "=";
+
+        if (info->len == 0) continue;
+
+        // Handle different data types
+        if (info->type == BCF_BT_INT8 || info->type == BCF_BT_INT16 || info->type == BCF_BT_INT32) {
+            int32_t* values = (int32_t*)info->vptr;
+            for (int j = 0; j < info->len; ++j) {
+                if (j > 0) infoString << ",";
+                infoString << values[j];
+            }
+        } else if (info->type == BCF_BT_FLOAT) {
+            float* values = (float*)info->vptr;
+            for (int j = 0; j < info->len; ++j) {
+                if (j > 0) infoString << ",";
+                infoString << values[j];
+            }
+        } else if (info->type == BCF_BT_CHAR) {
+            infoString << (char*)info->vptr;
+        }
+    }
+
+    return infoString.str();
+}
+
+
+int read_in_genotype_rare(const std::string vcf_file, const std::vector<string> &annotation, const std::vector<std::pair<std::string, int>> &positions,
+                      const std::vector<std::string> common_sample,const std::string chrom, int windowsize) {
+    std::cout << "Start reading in Genotype!" << std::endl;
+    //vector<vector<int>> g;
+    //vector<string> chr_pos;
+    // Open VCF file
+    htsFile *vcf = bcf_open(vcf_file.c_str(), "r");
+    if (!vcf) {
+        std::cerr << "Error opening VCF file." << std::endl;
+        return -1;
+    }
+
+    // Initialize VCF reader
+    bcf_hdr_t *hdr = bcf_hdr_read(vcf);
+    if (!hdr) {
+        std::cerr << "Error reading VCF header." << std::endl;
+        bcf_close(vcf);
+        return -1;
+    }
+
+    // Load the VCF index (you need to have the index file available, e.g., .csi or .tbi)
+    hts_idx_t *idx = bcf_index_load(vcf_file.c_str());
+    if (!idx) {
+        std::cerr << "Error loading VCF index." << std::endl;
+        bcf_hdr_destroy(hdr);
+        bcf_close(vcf);
+        return -1;
+    }
+
+    // Prepare to read records
+    bcf1_t *record = bcf_init();
+    if (!record) {
+        std::cerr << "Error initializing VCF record." << std::endl;
+        bcf_hdr_destroy(hdr);
+        bcf_close(vcf);
+        return -1;
+    }
+
+   // Create sample index map
+    std::unordered_map<std::string, int> sample_idx_map;
+    for (int i = 0; i < bcf_hdr_nsamples(hdr); ++i) {
+        sample_idx_map[hdr->samples[i]] = i;
+    }
+
+    // Iterate over the positions
+    std::pair<std::string, int> pos_info = positions[0];
+    string chr = pos_info.first;
+    int pos = pos_info.second;
+
+        // Fetch records within the windowsize
+    int start = (pos - windowsize > 0) ? (pos - windowsize) : 0;
+    int end = pos + windowsize;
+    stringstream ss;
+    ss<<chrom<<":"<<start<<"-"<<end;
+    cout<<ss.str()<<endl;
+    hts_itr_t *itr = bcf_itr_querys(idx, hdr, ss.str().c_str());
+    if (!itr) {
+            std::cerr << "Error creating iterator for " << chrom << ":" << start << "-" << end << std::endl;
+            cout<<"Error"<<endl;
+            return -1;
+    }
+
+    cout<<"iterator created!"<<endl;
+    if(bcf_itr_next(vcf,itr,record)<0){
+            cout<<"No records here"<<endl;
+            bcf_destroy(record);
+            bcf_hdr_destroy(hdr);
+            bcf_close(vcf);
+            return -1;
+    }
+    //define two vectors, MAF & distance
+    double maf,dist;
+    int pos_site=pos;
+    while (bcf_itr_next(vcf, itr, record) >= 0) {
+            bcf_unpack(record, BCF_UN_ALL);  // Unpack record
+            int pos = record->pos + 1;
+            dist = abs(pos-pos_site);
+            distance.push_back(dist);
+            string ref=record->d.allele[0];
+            string alt=record->d.allele[1];
+            // obtain variant annotation information 
+            string variant_annot = get_info_as_string(hdr, record);
+            string maf_tmp=variant_annot.substr(variant_annot.find("MAF"));
+            string maf_tmp_2=maf_tmp.substr(0,maf_tmp.find(";"));
+            maf=stod(maf_tmp_2.substr(maf_tmp_2.find("=")+1));
+            MAF.push_back(maf);
+
+            //bool exist_variant=false;
+            //for(int e=0;e<annotation.size();e++){
+            //    if(variant_annot.find(annotation[e])!=string::npos){
+            //        exist_variant=true;
+            //    }
+            //}
+
+            //need to maintain a vector with MAF and distance to splice site here 2025.12.8
+            bool exist_variant=true;
+            if(exist_variant==true){
+            string snp = chrom + ":" + to_string(pos)+":"+ref+":"+alt;
+            chr_pos.push_back(snp);
+            cout<<snp<<endl;
+            // Add record ID to chr_pos
+            Eigen::VectorXd tmp_g = Eigen::VectorXd::Zero(common_sample.size());
+
+            // Iterate through common_sample and extract genotype dosage
+            for (int c=0;c<common_sample.size();c++) {
+                string sample = common_sample[c];
+                std::string sample_substr = sample.substr(0, sample.find(":")); // Extract sample substring
+                if (sample_idx_map.find(sample_substr) != sample_idx_map.end()) {
+                    int sample_index = sample_idx_map[sample_substr];
+                    int *gt_arr = nullptr, n_gts = 0;
+
+                    // Extract genotype information
+                    if (bcf_get_genotypes(hdr, record, &gt_arr, &n_gts) >= 0) {
+                        int dosage = 0;
+
+                        // Sum alleles to get dosage (ignoring missing values -1)
+                        for (int j = sample_index * 2; j < sample_index * 2 + 2 && j < n_gts; ++j) {
+                            if (gt_arr[j] != bcf_gt_missing) {
+                                dosage += bcf_gt_allele(gt_arr[j]);
+                            }
+                        }
+                        tmp_g[c] = dosage;
+                    }
+
+                    if (gt_arr) {
+                        free(gt_arr);  // Free memory for genotype array
+                    }
+                }
+            }
+
+            // Append the dosage vector to g
+            g.push_back(tmp_g);
+    }}
+    hts_itr_destroy(itr);  // Destroy iterator
+    cout<<"destroy itr"<<endl;
+    
+    cout<<g[0].size()<<"\t"<<g.size()<<"\t"<<g[0][1]<<"\t"<<chr_pos.size()<<endl;
+    cout<<"Genotype read in"<<endl;
+    bcf_destroy(record);
+    bcf_hdr_destroy(hdr);
+    bcf_close(vcf);
+    return g.size();
+}
+
+double beta_pdf(double x, double alpha, double beta) {
+    if (x < 0.0 || x > 1.0) {
+        return 0.0; // Beta distribution is defined on the interval [0, 1]
+    }
+
+    // Compute Beta function B(alpha, beta) = Gamma(alpha) * Gamma(beta) / Gamma(alpha + beta)
+    double beta_function = std::tgamma(alpha) * std::tgamma(beta) / std::tgamma(alpha + beta);
+
+    // Beta PDF formula
+    return (std::pow(x, alpha - 1) * std::pow(1 - x, beta - 1)) / beta_function;
+}
+
+void collapse_genotype(int windowsize){
+    // incorporate both MAF & weight
+    vector<Eigen::VectorXd> g_tmp = g;
+    int n = g.front().size();
+    Eigen::VectorXd result = Eigen::VectorXd::Constant(n,0);
+    for(int i=0;i<distance.size();i++){
+        //double weight_MAF = beta_pdf(MAF[i], alpha, beta);;
+        //double weight_distance = beta_pdf(distance[i]/windowsize, alpha, beta);;
+        double weight= exp(-(distance[i]*MAF[i]));
+        //cout<<"weight"<<weight_MAF<<"\t"<<weight_distance<<endl;
+        for(int j=0;j<g[i].size();j++){
+            g[i][j]*=weight;
+        }
+        result=result+g[i];
+    }
+    //for (const auto& v : g) {
+    //    result = result.cwiseMax(v); // elementwise max
+    //}
+    g.clear();
+    /*double minVal=result.minCoeff();
+    double maxVal=result.maxCoeff();
+    Eigen::VectorXd scaled = (result.array() - minVal) / (maxVal - minVal);
+    for (int i = 0; i < scaled.size(); ++i) {
+        if (scaled[i] < 0.33) {
+            scaled[i] = 0;
+        } else if (scaled[i] < 0.66) {
+            scaled[i] = 1;
+        } else {
+            scaled[i] = 2;
+        }
+    }*/
+    //g.push_back(scaled);
+    g.push_back(result);
+    Eigen::VectorXd result_tmp=result;
+    double weight;
+    for(int i=0;i<distance.size();i++){
+        //double weight_MAF = beta_pdf(MAF[i], alpha, beta);;
+        //double weight_distance = beta_pdf(distance[i]/windowsize, alpha, beta);;
+        weight= exp(-(distance[i]*MAF[i]));
+        //cout<<"weight"<<weight_MAF<<"\t"<<weight_distance<<endl;
+        for(int j=0;j<g_tmp[i].size();j++){
+            g_tmp[i][j]*=weight;
+        }
+        result_tmp=result-g_tmp[i];
+        /*minVal=result_tmp.minCoeff();
+        maxVal=result_tmp.maxCoeff();
+        scaled = (result_tmp.array() - minVal) / (maxVal - minVal);
+        for (int i = 0; i < scaled.size(); ++i) {
+         if (scaled[i] < 0.33) {
+            scaled[i] = 0;
+         } else if (scaled[i] < 0.66) {
+            scaled[i] = 1;
+         } else {
+            scaled[i] = 2;
+        }
+        }*/
+        g.push_back(result_tmp);
+    }
+    cout<<"genotype collapse"<<endl;
+    cout<<g[0].size()<<"\t"<<g.size()<<"\t"<<g[0][1]<<"\t"<<chr_pos.size()<<endl;
+}
+
+double compute_MAF(const Eigen::VectorXd& geno) {
+    // Count the occurrences of 0s, 1s, and 2s in geno
+    double count_0 = (geno.array() == 0).count(); // number of homozygous reference
+    //double count_1 = (geno.array() == 1).count(); // number of heterozygous
+    //double count_2 = (geno.array() == 2).count(); // number of homozygous alternate
+    double count_2 = (geno.array() != 0).count();
+    // Total number of alleles (2 alleles per genotype)
+    double total_alleles = 2 * geno.size();
+    
+    // Count of reference (0) and alternate (2) alleles
+    double count_reference_allele = count_0 * 2 ; // Each homozygous reference contributes 2, heterozygous contributes 1
+    double count_alternate_allele = count_2 * 2 ; // Each homozygous alternate contributes 2, heterozygous contributes 1
+
+    // MAF is the frequency of the minor allele (the less frequent one)
+    double maf = std::min(count_reference_allele, count_alternate_allele) / total_alleles;
+    
+    return maf;
+}
+
+void pvalue_beta_sd_compute_rare(string output_file, string site, double dispersion, double threshold, Eigen::VectorXd residuals,Eigen::VectorXd pi,Eigen::VectorXd y,Eigen::VectorXd total){
+        if(chr_pos.size()==0){
+            cout<<"No genotype here"<<endl;
+            return;
+        }
+        cout<<"Start pvalue computing!"<<endl;
+        ofstream fout(output_file);
+        Eigen::VectorXd tmp_t_p_1_p = total_.array() * pi.array() * (1.0 - pi.array());
+        Eigen::VectorXd tmp_p_1_p = pi.array() * (1.0 - pi.array());
+        int sample_size=residuals.size();
+        Eigen::VectorXd pheno = residuals.array()/total_.array();
+        //covariate_adjusted_genotype
+        Eigen::VectorXd W_vec = ((pi.array()*(1-pi.array()))).matrix();
+        Eigen::MatrixXd W_diag = W_vec.asDiagonal();
+        W_ = W_diag.sparseView();
+        Eigen::MatrixXd X_T_W_X = (X.transpose()*W_) * X;
+        cout<<"rows for X_T_W_X"<<X_T_W_X.rows()<<"\t"<<X_T_W_X.rows()<<endl;
+        Eigen::MatrixXd X_T_W_X_inv = X_T_W_X.inverse();
+        Eigen::MatrixXd X_T_W = X.transpose() * W_;
+        Eigen::MatrixXd covariate_adjusted_geno = X*(X_T_W_X_inv*X_T_W);
+        //
+        double maf = 0;
+        const auto &g_vec = g[0];
+        maf = compute_MAF(g_vec);
+    // Copy values from std::vector to Eigen::VectorXd
+        Eigen::VectorXd geno = g_vec - covariate_adjusted_geno * g_vec;
+            //Eigen::VectorXd geno = g_vec;
+        Eigen::VectorXd genotype = geno.array() - geno.mean();
+            // Compute score vector and info matrix
+        double score_vector = (residuals.array() * genotype.array()).sum();
+            //double info_matrix = (genotype.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
+        double info_matrix = (genotype.array().square() * tmp_t_p_1_p.array() ).sum();
+
+            // Test statistic
+        double test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
+        double p_value = gsl_cdf_chisq_Q(test_statistics*test_statistics,1);
+
+    // 2. Compute variance of test statistics
+        double variance_test = std::sqrt((genotype.array().square() * tmp_t_p_1_p.array() ).sum()) * dispersion;
+
+    // 3. Compute effect size
+            //double effect = test_statistics / variance_test;
+            //double effect = test_statistics/std::sqrt(sample_size);
+    // 4. Compute z_score using the inverse of the normal CDF (ppf in Python)
+        double z_score = gsl_cdf_gaussian_Pinv(1.0 - p_value / 2, 1.0);
+        double effect = computeRegressionSlope(genotype,pheno);
+    // 5. Compute standard error
+            //double standard_error = std::abs(effect / test_statistics);
+        double standard_error = std::abs(effect/z_score);
+        #pragma imp critical
+        {
+            if(p_value<threshold){
+                fout<<site<<"\t"<<"burden"<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<"\t"<<maf<<endl;}
+        }
+            //fout<<site<<"\t"<<chr_pos[i]<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;}
+
+        double total_test_statistics=test_statistics;
+        double relative_contribution;
+        for(int i=0;i<chr_pos.size();i++){
+            const auto &g_vec = g[i+1];
+            maf = compute_MAF(g_vec);
+    // Copy values from std::vector to Eigen::VectorXd
+            geno = g_vec - covariate_adjusted_geno * g_vec;
+            //Eigen::VectorXd geno = g_vec;
+            genotype = geno.array() - geno.mean();
+            
+            #pragma omp parallel
+            {
+            // Compute score vector and info matrix
+            score_vector = (residuals.array() * genotype.array()).sum();
+            //double info_matrix = (genotype.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
+            info_matrix = (genotype.array().square() * tmp_t_p_1_p.array()).sum();
+
+            // Test statistic
+            test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
+            relative_contribution = 1-(test_statistics/total_test_statistics)*(test_statistics/total_test_statistics);
+    // 5. Compute standard error
+            //double standard_error = std::abs(effect / test_statistics);
+            #pragma imp critical
+            {
+            if(p_value<threshold){
+                fout<<site<<"\t"<<chr_pos[i]<<"\t"<<relative_contribution<<"\t"<<maf<<endl;}
+            }
+            //fout<<site<<"\t"<<chr_pos[i]<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;}
+            }
+        }
+            fout.close();
+    }
 
 private:
     Eigen::VectorXd& eta;
@@ -808,6 +1181,8 @@ private:
     const double tol;
     vector<Eigen::VectorXd> g;
     vector<string> chr_pos;
+    vector<double> MAF;
+    vector<double> distance;
     Eigen::VectorXd& y_;
     Eigen::VectorXd& total_;
     double tau_;
@@ -819,6 +1194,8 @@ int DS_parse_options(int argc, char *argv[]);
 int QTL(int argc, char *argv[]);
 int trans_QTL(int argc, char *argv[]);
 int DS(int argc, char *argv[]);
+int rare_mapping(int argc, char *argv[]);
+int rare_mapping_parse_options(int argc, char *argv[]);
 
 
 #endif

@@ -27,16 +27,16 @@ int USRExtractor::parse_options(int argc, char *argv[]) {
     optind = 1; //Reset before parsing again.
     int c;
     stringstream help_ss;
-    while((c = getopt(argc, argv, "h:r:o:s:b:t:")) != -1) {
+    while((c = getopt(argc, argv, "h:o:s:b:t:a:")) != -1) {
         switch(c) {
             case 'h':
                 usage(help_ss);
                 throw common::cmdline_help_exception(help_ss.str());
-            case 'r':
-                region_ = string(optarg);
-                break;
             case 'o':
                 output_file_ = string(optarg);
+                break;
+            case 'a':
+                bam_ = string(optarg);
                 break;
             case 's':
                 if (string(optarg).compare("XS") == 0){
@@ -85,12 +85,13 @@ int USRExtractor::parse_options(int argc, char *argv[]) {
 
 int USRExtractor::usage(ostream& out) {
     out << "Usage:" 
-        << "\t\t" << "Junctools unspliced read count extract" << endl;
+        << "\t\t" << "ISSAC unspliced read count extract" << endl;
     out << "Options:" << endl;
     out << "\t\t" << "-o FILE\tThe file to write output to. [STDOUT]" << endl;
     out << "\t\t" << "-s INT\tStrandness mode \n"
         << "\t\t\t " << "XS, use XS tags provided by aligner; RF, first-strand; FR, second-strand. REQUIRED" << endl;
     out << "\t\t" << "-t FILE\tInterested splice site" << endl;
+    out << "\t\t" << "-a FILE\tbam file" << endl;
     out << "\t\t" << "-b BARCODE\tThe file containing the barcodes of interest for single cell data." << endl;
         
     out << endl;
@@ -115,22 +116,21 @@ string USRExtractor::get_new_USR_name() {
 
 void USRExtractor::set_USR_strand_flag(bam1_t *aln, USR& j1) {
     uint32_t flag = (aln->core).flag;
-    int reversed = (flag >> 4) % 2;
-    int mate_reversed = (flag >> 5) % 2;
-    int first_in_pair = (flag >> 6) % 2;
-    int second_in_pair = (flag >> 7) % 2;
-    // strandness_ is 1 for RF, and 2 for FR
-    int bool_strandness = strandness_ - 1;
-    int first_strand = !bool_strandness ^ first_in_pair ^ reversed;
-    int second_strand = !bool_strandness ^ second_in_pair ^ mate_reversed;
-    char strand;
-    if (first_strand){
-        strand = '+';
+    int reversed      = (flag >> 4) & 1;
+    int mate_reversed = (flag >> 5) & 1;
+    int first_in_pair = (flag >> 6) & 1;
+    int second_in_pair= (flag >> 7) & 1;
+    int bool_strandness = strandness_ - 1;  // 0 for RF, 1 for FR
+    int strand_flag;
+    if (first_in_pair) {
+    strand_flag = !bool_strandness ^ reversed;
+    } else if (second_in_pair) {
+    strand_flag = !bool_strandness ^ !mate_reversed;  // second read is opposite
     } else {
-        strand = '-';
+    // unpaired read
+    strand_flag = !bool_strandness ^ reversed;
     }
-    //cerr <<"flag strand is " << j1.strand << endl;
-    j1.strand = string(1, strand);
+    j1.strand = string(1, strand_flag ? '+' : '-');
     return;
 }
 
@@ -157,18 +157,22 @@ int USRExtractor::parse_alignment_into_unspliced_read(bam_hdr_t *header, bam1_t 
     USR j1;
     uint8_t *cb = bam_aux_get(aln, "CB");  // Get the cell barcode
     uint8_t *ub = bam_aux_get(aln, "UB");  // Get the UMI
+    if(!(cb&&ub))return 0;
     j1.CB = bam_aux2Z(cb); 
     j1.UB = bam_aux2Z(ub);
+    if(!((aln->core.tid)&&(aln->core.pos)))return 0;
     int chr_id = aln->core.tid;
+    if((chr_id>22)||(chr_id<1))return 0;
     int read_pos = aln->core.pos;
     string chr(header->target_name[chr_id]);
+    if(chr.find("chr")==string::npos)return 0;
     j1.chrom = chr;
     j1.start = read_pos; 
     set_USR_strand_flag(aln, j1); 
     set_site(j1);
-
+    
     if(j1.site_pos.size()==0)return 0;
-
+    
     auto it = find(barcodelist.begin(),barcodelist.end(),j1.CB);
     
     if(it==barcodelist.end()){
@@ -180,7 +184,7 @@ int USRExtractor::parse_alignment_into_unspliced_read(bam_hdr_t *header, bam1_t 
     }
     
     uint32_t *cigar = bam_get_cigar(aln);
-
+    if(!(cigar))return 0;
     set<int> possible_site;
     for (int i = 0; i < n_cigar; ++i) {
         char op =

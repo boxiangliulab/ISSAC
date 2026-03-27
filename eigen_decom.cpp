@@ -43,15 +43,21 @@ int QTL_mapping::parse_options(int argc, char *argv[]) {
     optind = 1; //Reset before parsing again.
     int c;
     stringstream help_ss;
-    while((c = getopt(argc, argv, "hs:o:u:p:g:n:")) != -1) {
+    while((c = getopt(argc, argv, "hs:u:p:g:n:t:")) != -1) {
         switch(c) {
             case 'h':
-                cout<<"help"<<endl;
+                cout << "Usage: program [options]\n"
+                << "Options:\n"
+                << "  -h          Show this help message and exit\n"
+                << "  -s <file>   Splice phenotype file\n"
+                << "  -u <path>   Output path\n"
+                << "  -p <file>   Principal components (PC) file\n"
+                << "  -g <file>   GRM file\n"
+                << "  -n <int>    Number of GRM samples\n"
+                << "  -t <int>    Times of normalize parameters estimation (*100)\n";
+                exit(0);
             case 's':
                 splice_file_ = string(optarg);
-                break;
-            case 'o':
-                output_file_ = string(optarg);
                 break;
             case 'u':
                 output_path_ = string(optarg);
@@ -62,14 +68,11 @@ int QTL_mapping::parse_options(int argc, char *argv[]) {
             case 'g':
                 GRM_ = string(optarg);
                 break;
-            /*case 'c':
-                chr_ = string(optarg);
-                break;
-            case 'v':
-                vcf_ = string(optarg);
-                break;*/
             case 'n':
                 GRM_num_ = string(optarg);
+                break;
+            case 't':
+                time_ = stoi(string(optarg));
                 break;
             case '?':
             default:
@@ -350,7 +353,7 @@ double REMLOptimizer::logAbsDeterminant(const Eigen::SparseMatrix<double>& V) {
 }
 
 
-void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result){
+void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result,Eigen::SparseMatrix<double> Identity){
     // initialize: obtain beta, eta(predicted value)
     vector<int> splice_num = splice_[site];
     vector<int> total_num = splice_unsplice_[site];
@@ -389,7 +392,11 @@ void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result){
     //initialize u_hat
     Eigen::VectorXd u_hat = Eigen::VectorXd::Zero(splice_numXd.size());
     REMLOptimizer tmp(eta, X_cons, beta_hat, u_hat, splice_numXd, total_numXd, result, iter, tol,mat,0);
-    tmp.update(splice_numXd,total_numXd);
+    try {
+        tmp.update(splice_numXd,total_numXd);
+    } catch (std::exception &e) {
+           std::cerr << "Update failed: " << e.what() << std::endl;
+    }
     string chrom = site.substr(0,site.find(":"));
     string tmp_pos = site.substr(site.find(":")+1);
     string pos = tmp_pos.substr(tmp_pos.find(":")+1);
@@ -397,7 +404,7 @@ void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result){
         {chrom, stoi(pos)}
     };
     //tmp.read_in_genotype(vcf_, positions, windowsize, common_name);
-    tmp.compute(output_path_,site);
+    tmp.compute(output_path_,site,Identity,time_);
 }
 
 
@@ -433,7 +440,12 @@ void QTL_mapping::test(){
     cout<<result.rows()<<"\t"<<result.cols()<<endl;
     for(int site = 0;site<splice_site_.size();site++){
         cout<<splice_site_[site]<<endl;
-        Bino_GLMM(splice_site_[site],result);
+        try {
+            Bino_GLMM(splice_site_[site],result,Identity);
+        } catch (std::exception &e) {
+           std::cerr << "Binomial mixed model contruct error" << e.what() << std::endl;
+           continue;
+        }
     }
 }
 
@@ -502,7 +514,7 @@ Eigen::VectorXd QTL_mapping::IRLS(const Eigen::MatrixXd& X, const Eigen::VectorX
         if (abs(beta[0]-pre_beta) < tol) {
             break;  // Convergence reached
         }
-        beta = Eigen::VectorXd::Zero(p); // if not converged
+        //beta = Eigen::VectorXd::Zero(p); // if not converged
     }
     if(isnan(beta[0])){beta = Eigen::VectorXd::Zero(p);}
     return beta;
@@ -525,7 +537,19 @@ int QTL_parse_options(int argc, char *argv[]) {
     while((c = getopt(argc, argv, "hs:o:c:v:x:p:w:m:t:")) != -1) {
         switch(c) {
             case 'h':
-                cout<<"help"<<endl;
+                cout << "Usage: program [options]\n"
+                << "Options:\n"
+                << "  -h          Show this help message and exit\n"
+                << "  -s <file>   Site list file\n"
+                << "  -o <path>   Output path\n"
+                << "  -c <chr>    Chromosome\n"
+                << "  -v <file>   VCF file\n"
+                << "  -x <file>   Covariate file (X)\n"
+                << "  -p <path>   Input data path\n"
+                << "  -w <int>    Window size\n"
+                << "  -m <file>   Common sample file\n"
+                << "  -t <float>  Threshold\n";
+                exit(0);
             case 's':
                 site_list_ = string(optarg);
                 break;
@@ -673,7 +697,16 @@ int DS_parse_options(int argc, char *argv[]) {
     while((c = getopt(argc, argv, "hs:o:p:m:x:g:")) != -1) {
         switch(c) {
             case 'h':
-                cout<<"help"<<endl;
+                cout << "Usage: program [options]\n"
+                << "Options:\n"
+                << "  -h          Show this help message and exit\n"
+                << "  -s <file>   Site list file\n"
+                << "  -o <path>   Output path\n"
+                << "  -x <file>   Covariate file (X)\n"
+                << "  -p <path>   Input data path\n"
+                << "  -m <file>   Common sample file\n"
+                << "  -g <file>  Group information\n";
+                exit(0);
             case 's':
                 site_list_ = string(optarg);
                 break;
@@ -811,7 +844,19 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
     while((c = getopt(argc, argv, "hs:o:c:v:x:w:p:m:t:")) != -1) {
         switch(c) {
             case 'h':
-                cout<<"help"<<endl;
+                cout << "Usage: program [options]\n"
+                << "Options:\n"
+                << "  -h          Show this help message and exit\n"
+                << "  -s <file>   Site list file\n"
+                << "  -o <path>   Output path\n"
+                << "  -c <chr>    Chromosome\n"
+                << "  -v <file>   VCF file\n"
+                << "  -x <file>   Covariate file (X)\n"
+                << "  -p <path>   Input data path\n"
+                << "  -w <file>    tested variant id\n"
+                << "  -m <file>   Common sample file\n"
+                << "  -t <float>  Threshold\n";
+                exit(0);
             case 's':
                 site_list_ = string(optarg);
                 break;

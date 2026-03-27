@@ -100,7 +100,7 @@ int JunctionsExtractor::parse_options(int argc, char *argv[]) {
 //Usage statement for this tool
 int JunctionsExtractor::usage(ostream& out) {
     out << "Usage:" 
-        << "\t\t" << "regtools junctions extract [options] indexed_alignments.bam" << endl;
+        << "\t\t" << "ISSAC junctions extract [options] indexed_alignments.bam" << endl;
     out << "Options:" << endl;
     out << "\t\t" << "-a INT\tMinimum anchor length. Junctions which satisfy a minimum \n"
         << "\t\t\t " << "anchor length on both sides are reported. [8]" << endl;
@@ -275,23 +275,25 @@ void JunctionsExtractor::set_junction_strand_XS(bam1_t *aln, Junction& j1) {
 //Get the strand from the bitwise flag
 void JunctionsExtractor::set_junction_strand_flag(bam1_t *aln, Junction& j1) {
     uint32_t flag = (aln->core).flag;
-    int reversed = (flag >> 4) % 2;
-    int mate_reversed = (flag >> 5) % 2;
-    int first_in_pair = (flag >> 6) % 2;
-    int second_in_pair = (flag >> 7) % 2;
-    // strandness_ is 1 for RF, and 2 for FR
-    int bool_strandness = strandness_ - 1;
-    int first_strand = !bool_strandness ^ first_in_pair ^ reversed;
-    int second_strand = !bool_strandness ^ second_in_pair ^ mate_reversed;
-    char strand;
-    if (first_strand){
-        strand = '+';
+    int reversed       = (flag >> 4) & 1;
+    int mate_reversed  = (flag >> 5) & 1;
+    int first_in_pair  = (flag >> 6) & 1;
+    int second_in_pair = (flag >> 7) & 1;
+
+    // strandness_ is 1 for RF, 2 for FR
+    int bool_strandness = strandness_ - 1;  // 0 for RF, 1 for FR
+
+    int strand_flag;
+    if (first_in_pair) {
+        strand_flag = !bool_strandness ^ reversed;
+    } else if (second_in_pair) {
+        strand_flag = !bool_strandness ^ !mate_reversed;  // second read is opposite polarity
     } else {
-        strand = '-';
+        // unpaired read
+        strand_flag = !bool_strandness ^ reversed;
     }
-    //cerr <<"flag strand is " << j1.strand << endl;
-    j1.strand = string(1, strand);
-    return;
+
+    j1.strand = string(1, strand_flag ? '+' : '-');
 }
 
 //Get strand based on splice-site/intron motif

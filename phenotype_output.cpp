@@ -50,17 +50,46 @@ double calculateStdDev(const vector<double>& vec) {
 }
 
 int pheno_output(int argc,char* argv[]){
-    if(argc!=6){
-        cerr<<"Usage: "<<argv[0]<<endl;
-        cout << "Usage:\t\t" << "filter site with high sparsity & low variance <command> [options]" << endl;
-        cout << "Command:\t" << "filter function" << endl;
-        return 1;
-    }
-    string read_count_file=argv[1];
-    string out_file=argv[2];
-    string Prop_file=argv[3];
-    double sd=stod(argv[4]);
-    double na_prop=stod(argv[5]);
+    string read_count_file, out_file, Prop_file;
+    double sd = 0.0, na_prop = 0.0;
+    int c;
+    while ((c = getopt(argc, argv, "hr:o:p:s:n:")) != -1) {
+    switch (c) {
+        case 'h':
+            cout << "Usage: " << argv[0] << " [options]\n"
+                 << "Description: Filter sites with high sparsity and low variance\n\n"
+                 << "Options:\n"
+                 << "  -h          Show this help message and exit\n"
+                 << "  -r <file>   Read count file\n"
+                 << "  -o <file>   Output file\n"
+                 << "  -p <file>   Proportion file\n"
+                 << "  -s <float>  Standard deviation threshold\n"
+                 << "  -n <float>  NA proportion threshold\n";
+            exit(0);
+        case 'r':
+            read_count_file = string(optarg);
+            break;
+        case 'o':
+            out_file = string(optarg);
+            break;
+        case 'p':
+            Prop_file = string(optarg);
+            break;
+        case 's':
+            sd = stod(string(optarg));
+            break;
+        case 'n':
+            na_prop = stod(string(optarg));
+            break;
+        case '?':
+        default:
+            throw runtime_error("Error parsing inputs!\n\n");
+    }}
+    if (read_count_file.empty() || out_file.empty() || Prop_file.empty() ||
+    sd == 0.0 || na_prop == 0.0) {
+    cerr << "Error: all options -r, -o, -p, -s, -n are required.\n"
+         << "Run with -h for usage.\n";
+    return 1;}
    
     ifstream fin;
     fin.open(read_count_file);
