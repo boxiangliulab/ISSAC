@@ -14,16 +14,6 @@ ISSAC provides a complete pipeline for single-cell splicing analysis, including:
 
 ---
 
-## Components
-| File | Description |
-|---|---|
-| `junctions_extract.cpp` | Single-cell junction extraction (adapted from regtools) |
-| `junctions_extract.h` | Header file for junction extraction module |
-
-> `junctions_extract.cpp` and `junctions_extract.h` were adapted from [regtools](https://github.com/griffithlab/regtools) to enable junction extraction at the single-cell level.
-
----
-
 ## Test Data
 
 A small example dataset is provided to verify your installation and explore ISSAC's functionality.
