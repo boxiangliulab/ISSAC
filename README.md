@@ -27,15 +27,9 @@ ISSAC provides a complete pipeline for single-cell splicing analysis, including:
 ## Test data
 ```bash
 #
-git clone https://github.com/boxiangliulab/ISSAC.git
+git clone -b branch-name https://github.com/boxiangliulab/ISSAC.git
 cd test_data/
 bash test_detail.sh
-
----
-
-
----
-
 
 ---
 
