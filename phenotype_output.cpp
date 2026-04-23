@@ -85,8 +85,7 @@ int pheno_output(int argc,char* argv[]){
         default:
             throw runtime_error("Error parsing inputs!\n\n");
     }}
-    if (read_count_file.empty() || out_file.empty() || Prop_file.empty() ||
-    sd == 0.0 || na_prop == 0.0) {
+    if (read_count_file.empty() || out_file.empty() || Prop_file.empty()) {
     cerr << "Error: all options -r, -o, -p, -s, -n are required.\n"
          << "Run with -h for usage.\n";
     return 1;}
