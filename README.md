@@ -84,7 +84,7 @@ Step 3: Null GLMM fitting → cis-sQTL mapping
 
 To improve statistical power while keeping sparsity low, ISSAC operates on metacells rather than individual cells. For each donor:
 
-1. PC embeddings from the snRNA-seq gene expression matrix (SCTransformd-based) are used to build a k-nearest-neighbours graph.
+1. PC embeddings from the snRNA-seq gene expression matrix (SCTransformed-based) are used to build a k-nearest-neighbours graph.
 2. Louvain clustering is applied with `m` as the minimum cluster size.
 3. Clusters smaller than `m` cells are iteratively merged into adjacent larger clusters.
 4. Each final cluster of ≥ `m` cells is treated as one metacell for sQTL mapping.
