@@ -100,7 +100,7 @@ Extract splicing junctions and non-split reads from BAM files. These provide raw
 
 ### 1a. Junction Extraction
 
-Extracts splice junctions from a 10X RNA-seq BAM file.
+Extracts splice junctions from a 10X scRNA-seq BAM file.
 
 ```bash
 bamfile=junctions_nonsplit_extract/test.bam
@@ -210,7 +210,7 @@ Constructs per-metacell splicing phenotype matrices from junction and non-split 
 
 ### 2a. Competitive Intron Phenotype Preparation
 
-Groups splice sites into intron clusters across metacells and generates per-site usage ratios (PSI-like values).
+Groups splice sites across metacells and generates per-site usage ratios
 
 ```bash
 ls splice_phenotype_prepare/stat_file/*.stat \
@@ -235,7 +235,7 @@ $ISSAC pheno_group \
 | `-s` | File listing sample (metacell) names |
 | `-j` | Directory containing per-metacell `.stat` files |
 | `-o` | Output prefix for phenotype files |
-| `-t` | Minimum total reads per junction across metacells |
+| `-t` | Minimum total reads per junction across all metacells |
 | `-l` | Log file for intermediate results |
 | `-n` | Minimum intron length (bp); must match junction extraction |
 | `-x` | Maximum intron length (bp); must match junction extraction |
@@ -245,12 +245,8 @@ $ISSAC pheno_group \
 **`.inclu_exclu`** — for each splice site: the supporting (included) and competing (excluded) intron reads.
 
 ```
-chr10:+:73 110985627
-included 110919657:110985627
-excluded 110919657:110951607 110919657:110964124
-chr10:+:76 111114416
-included 111114416:111114902 111114416:111117959
-excluded
+chr10:+:73 110985627 included 110919657:110985627 excluded 110919657:110951607 110919657:110964124
+chr10:+:76 111114416 included 111114416:111114902 111114416:111117959 excluded
 ```
 
 **`.intron.out`** — CB-UMI–based junction read counts for each intron across all samples.
@@ -334,7 +330,7 @@ $ISSAC pheno_output \
 |------|-------------|
 | `-r` | Input site phenotype file (`.site`) |
 | `-o` | Filtered output phenotype file (`.filtered`) |
-| `-p` | Output file for normalized per-site usage proportions (`.prop`) |
+| `-p` | Output file for per-site usage proportions (`.prop`) |
 | `-s` | Minimum variance threshold; sites below this are excluded |
 | `-n` | Maximum sparsity threshold; sites exceeding this fraction of missing values are excluded |
 
@@ -347,7 +343,7 @@ chr10:+:104254573 0:1 0:2 0:2 1:2 1:2
 chr10:+:104255162 2:2 13:13 15:15 6:6 7:7
 ```
 
-**Example `.prop` output** (normalized splice usage ratios; used for splice PC computation):
+**Example `.prop` output** (splice usage ratios; used for splice PC computation):
 
 ```
 chr10:-:120793306 0.000000 0.000000 0.000000 0.000000 0.000000
