@@ -66,7 +66,7 @@ ISSAC=path/to/ISSAC/build/ISSAC
 ## Pipeline Overview
 
 ```
-BAM file (per metacell)
+BAM file
         │
         ▼
 Step 1: Junction extraction + non-split read extraction
@@ -121,6 +121,7 @@ $ISSAC junctools extract \
 | `-m` | Minimum intron length (bp); junctions spanning smaller distances are excluded |
 | `-M` | Maximum intron length (bp); junctions spanning larger distances are excluded |
 | `-s` | Strand specificity (`RF` for 10X 3′ libraries; `FR` for 5′ libraries) |
+| `-o` | Output juncfiles' prefix |
 
 **Example output (`.junc`):**
 
