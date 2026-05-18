@@ -14,8 +14,8 @@ ISSAC=../build/ISSAC
 
 # --- Junction Extraction (10X 3' RNA-seq BAM) ---
 # Extracts splice junctions from a BAM file.
-# -a 8        : Minimum number of reads supporting a junction
-# -m 50       : Minimum junction overhang length (bp)
+# -a 8        : Minimum anchor length (bp)
+# -m 50       : Maximum intron length (bp); junctions spanning shorter distances are excluded
 # -M 500000   : Maximum intron length (bp); junctions spanning longer distances are excluded
 # -s RF       : Strand specificity (RF = reverse-forward, typical for 10X 3' libraries)
 bamfile=junctions_nonsplit_extract/test.bam
@@ -35,7 +35,7 @@ $ISSAC juncstat -b $barcode -j $output_junc -o $output_stat
 
 # --- Non-split Read Extraction ---
 # Extracts reads that do NOT span a splice junction (used for intron retention quantification).
-# -s RF  : Strand specificity
+# -s     : Strand specificity
 # -b     : Barcode list for the metacell
 # -t     : List of intronic sites to quantify non-split read coverage
 # -a     : Input BAM file
@@ -58,11 +58,11 @@ $ISSAC IR extract -s RF -b $barcode -t $site_list -a $bamfile -o $output_nonspli
 
 # --- (a) Competitive Intron Phenotype Preparation ---
 # Groups splice sites into intron clusters across metacells.
-# Generates per-site usage ratios (PSI-like values) for competitive splice sites.
+# Generates splice site usage ratios for competitive splice sites.
 # -s : File listing sample (metacell) names
 # -j : Directory containing per-metacell .stat files
 # -o : Output prefix for phenotype files
-# -t : Minimum total reads per junction across metacells
+# -t : Minimum total reads per junction across all metacells
 # -l : Log file
 # -n : Minimum intron length (bp); consistent with junction extraction
 # -x : Maximum intron length (bp); consistent with junction extraction
@@ -80,7 +80,7 @@ $ISSAC pheno_group -s $sample \
 
 # --- (b) Single Intron Cluster (Intron Retention) Phenotype Preparation ---
 # Combines per-metacell non-split read files into a site-level phenotype matrix.
-# Quantifies intron retention as the ratio of non-split to total reads at each site.
+# Quantifies intron retention as the ratio of split reads to total reads (including split and non-split reads) at each site.
 # -s : Sample list file
 # -f : Directory containing per-metacell non-split read files
 # -l : List of intronic sites to include
@@ -164,7 +164,7 @@ ls model_construct_QTL_mapping/model/* | cut -d '/' -f 3 | cut -d '.' -f 1 \
 # Tests association between each splice site and all SNPs within a cis window.
 # Uses the pre-fitted null models for efficient GLMM-based association testing.
 # -s : List of splice sites to test
-# -o : Output prefix for QTL result files
+# -o : Output directory for QTL result files
 # -c : Chromosome to map (process one chromosome at a time for parallelisation)
 # -v : Genotype file in BCF format (must be indexed)
 # -x : PC file (same covariates used during model construction)
