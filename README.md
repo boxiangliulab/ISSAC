@@ -205,7 +205,7 @@ Each line: non-split CB-UMI–based read counts crossing a splice site (chrom:po
 
 Constructs per-metacell splicing phenotype matrices from junction and non-split read files. Two types of splicing events are handled:
 
-- **(a) Competitive introns** — splice sites within intron clusters where multiple sites compete (classic sQTL signal)
+- **(a) Competitive introns** — splice sites with detectable competing introns (classic sQTL signal)
 - **(b) Single intron clusters** — intron retention events quantified from non-split reads
 
 ### 2a. Competitive Intron Phenotype Preparation
@@ -249,7 +249,7 @@ chr10:+:73 110985627 included 110919657:110985627 excluded 110919657:110951607 1
 chr10:+:76 111114416 included 111114416:111114902 111114416:111117959 excluded
 ```
 
-**`.intron.out`** — CB-UMI–based junction read counts for each intron across all samples.
+**`.intron.out`** — CB-UMI–based junction read counts for each intron across all samples, the same sequence as in the sample list.
 
 ```
 chr10:+:233 chr10:+:22925636:22931995 2 0 2 0 1 0
@@ -275,7 +275,7 @@ chr10:-:16817084 9:11 12:12 13:17 8:9 7:7 13:13 15:16
 
 ### 2b. Single Intron Cluster (Intron Retention) Phenotype Preparation
 
-Combines per-metacell non-split read files into a site-level phenotype matrix, quantifying intron retention as the ratio of non-split to total reads at each site.
+Combines per-metacell non-split read files into a site-level phenotype matrix, quantifying intron retention as the ratio of split reads to total reads (including both split and non-split reads) at each site.
 
 ```bash
 single_intron_site=splice_phenotype_prepare/test_single_intron_site
@@ -343,7 +343,7 @@ chr10:+:104254573 0:1 0:2 0:2 1:2 1:2
 chr10:+:104255162 2:2 13:13 15:15 6:6 7:7
 ```
 
-**Example `.prop` output** (splice usage ratios; used for splice PC computation):
+**Example `.prop` output** (splice site usage ratios; used for splice PC computation):
 
 ```
 chr10:-:120793306 0.000000 0.000000 0.000000 0.000000 0.000000
@@ -359,7 +359,7 @@ Fits a binomial mixed model (GLMM) per splice site using a genetic relatedness m
 
 ### GRM Preparation
 
-Generate a GRM from genotype data using PLINK:
+Generate a GRM from genotype data (pruned genotype) using PLINK or GCTA:
 
 ```bash
 plink --bfile pruned_output --make-grm-bin --out grm_output
@@ -378,7 +378,7 @@ write.table(as.data.frame(dat), "GRM.txt",
 **Example `GRM.txt`:**
 
 ```
-             JP_RIK_H001 JP_RIK_H002 JP_RIK_H003
+JP_RIK_H001 JP_RIK_H002 JP_RIK_H003
 JP_RIK_H001  0.989882    0.030982    0.030328
 JP_RIK_H002  0.030982    0.982672    0.011874
 JP_RIK_H003  0.030328    0.011874    0.986594
