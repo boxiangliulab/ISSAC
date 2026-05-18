@@ -117,7 +117,7 @@ $ISSAC junctools extract \
 
 | Flag | Description |
 |------|-------------|
-| `-a` | Minimum number of reads supporting a junction |
+| `-a` | Minimum anchor length (bp) |
 | `-m` | Minimum intron length (bp); junctions spanning smaller distances are excluded |
 | `-M` | Maximum intron length (bp); junctions spanning larger distances are excluded |
 | `-s` | Strand specificity (`RF` for 10X 3′ libraries; `FR` for 5′ libraries) |
