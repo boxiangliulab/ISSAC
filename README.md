@@ -61,9 +61,8 @@ test_data/
 
 ```bash
 git clone https://github.com/your-org/ISSAC.git
-cd ISSAC
-mkdir build && cd build
-cmake .. && make
+cd ISSAC/build
+./ISSAC -h
 ```
 
 Set the path to the compiled binary:
