@@ -117,6 +117,7 @@ $ISSAC junctools extract \
 | `-m` | Minimum intron length (bp) |
 | `-M` | Maximum intron length (bp); junctions spanning longer distances are excluded |
 | `-s` | Strand specificity (`RF` = reverse-forward, typical for 10X 3′ libraries) |
+| `-o` | Output junction files |
 
 ### 1b. Per-Metacell Junction Statistics
 
