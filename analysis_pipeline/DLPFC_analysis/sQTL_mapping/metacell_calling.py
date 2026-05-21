@@ -10,40 +10,48 @@ import os
 import networkx as nx
 import anndata
 import community as community_louvain
+from sklearn.metrics import silhouette_score, calinski_harabasz_score
 
-meta_size = 10
+import sys
 
-cell="Endothelial"
-cohort="NG"
-adata = sc.read_h5ad("harmony_endothelial.h5ad")
+meta_size = int(sys.argv[1])
 
+cell_type=sys.argv[2]
+norm_choice=sys.argv[3]
+
+
+if norm_choice=="log_normalize":
+   adata = sc.read_h5ad("/data/projects/11003054/e0950183/AIDA_phaseIfreezeII/rds/"+cell_type+".h5ad")
+
+if norm_choice=="SCTransform":
+   adata = sc.read_h5ad("/data/projects/11003054/e0950183/AIDA_phaseIfreezeII/rds/"+cell_type+"_SCT.h5ad")
 
 X = pd.DataFrame(adata.obsm['X_pca'])
-X.index = adata.obs['individualID'].index
+X.index = adata.obs['DCP_ID'].index ##sample name
 
 adata.obs["meta_cell"] = ""
 meta_info = []
 
-donor=pd.read_csv("/data/projects/11003054/e0950183/brain_sQTL/junc/total/Nature_sample",header=None)
-donor_h5ad = np.unique(adata.obs['individualID'])
-inter_donor = np.intersect1d(donor,donor_h5ad)
 
 whole_label=pd.DataFrame(np.zeros((0,3)))
 whole_label.columns=['meta','cell_id','ind_id']
 
+inter_donor=np.unique(adata.obs['DCP_ID']).tolist()
+
+performance = pd.DataFrame(np.nan, index=inter_donor, columns=['Silhouette','CH'])
 for i in range(len(inter_donor)):
     sample_id = inter_donor[i]
-    num = adata.obs['individualID'][adata.obs['individualID']==sample_id]
-    if len(num)<meta_size:
-       continue
+    print(sample_id)
+    num = adata.obs['DCP_ID'][adata.obs['DCP_ID']==sample_id]
     if len(num)<2*meta_size:
        newlabel = pd.DataFrame(np.zeros((len(num),3)))
        newlabel.columns=['meta','cell_id','ind_id']
        newlabel.loc[:,'meta']="0"
-       newlabel.loc[:,'cell_id']=adata.obs['individualID'].index[adata.obs['individualID']==sample_id]
+       newlabel.loc[:,'cell_id']=adata.obs['DCP_ID'].index[adata.obs['DCP_ID']==sample_id]
        newlabel.loc[:,'ind_id']=sample_id
        whole_label = pd.concat([whole_label,newlabel])
        continue
+    print("pass1")
     pc_matrix = X.loc[num.index]
     tmp_adata = anndata.AnnData(X=np.array(pc_matrix))
     nbrs = NearestNeighbors(n_neighbors=meta_size).fit(pc_matrix)
@@ -61,7 +69,7 @@ for i in range(len(inter_donor)):
        if group_num<meta_size:
           labels[labels==unique_group]=10000
     newlabel = pd.DataFrame(labels)
-    newlabel.loc[:,'cell_id']=adata.obs['individualID'].index[adata.obs['individualID']==sample_id]
+    newlabel.loc[:,'cell_id']=adata.obs['DCP_ID'].index[adata.obs['DCP_ID']==sample_id]
     unassigned = newlabel.loc[newlabel.iloc[:,0]==10000,'cell_id']
     newcluster=np.unique(labels)
     if len(newcluster)==1:
@@ -70,7 +78,7 @@ for i in range(len(inter_donor)):
        newlabel.loc[:,'ind_id']=sample_id
        whole_label = pd.concat([whole_label,newlabel])
        continue
-    
+    print("pass2")
     pc_centroid = pd.DataFrame(np.zeros(((len(newcluster)-1),50)))
     pc_centroid.index=newcluster[0:(len(newcluster)-1)]
     for pc_centroid_index in pc_centroid.index:
@@ -87,12 +95,20 @@ for i in range(len(inter_donor)):
     newlabel.loc[:,0]=np.array(newlabel.iloc[:,0]).astype(str)
     newlabel.columns=['meta','cell_id','ind_id']
     whole_label = pd.concat([whole_label,newlabel])
+    ###compute silhouette_score
+    if len(np.unique(newlabel.loc[:,'meta']))>1:
+     performance.loc[sample_id,'Silhouette'] = silhouette_score(pc_matrix, np.array(newlabel.iloc[:,0]).astype(str), metric='euclidean')
+    ###compute Calinski–Harabasz index
+     performance.loc[sample_id,'CH'] = calinski_harabasz_score(pc_matrix, np.array(newlabel.iloc[:,0]).astype(str))
 
 
-whole_label.loc[:,'combine_meta']=whole_label['ind_id']+':'+cohort+"_"+whole_label['meta']
+whole_label.loc[:,'combine_meta']=whole_label['ind_id']+':'+whole_label['meta']
 
 len(np.unique(whole_label.loc[:,'combine_meta']))
        
 len(np.unique(whole_label.loc[:,'ind_id']))
 
-whole_label.to_csv("/home/users/nus/e0950183/scratch/brain_annot/metacell/"+cell+".csv",index=False)
+whole_label.to_csv("/data/projects/11003054/e0950183/ISSAC_revise/02_metacell_size/"+cell_type+norm_choice+str(meta_size)+"_meta.csv",index=False) ##metacell label
+
+performance.to_csv("/data/projects/11003054/e0950183/ISSAC_revise/02_metacell_size/"+cell_type+norm_choice+str(meta_size)+"_performance.csv",index=True) ##performance of metacell construction
+
