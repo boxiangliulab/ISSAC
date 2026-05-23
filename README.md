@@ -131,7 +131,7 @@ chr1    961651  961879  4       +       961750  961825  99,54   TGCACCTAGGTCGGAT
 chr1    1013487 1014125 17      +       1013576 1013983 89,142  TGGGCGTAGTACGATA        CTTCACAGAT
 ```
 
-Columns: (1) chrom, (2) read start, (3) read end, (4) CB-UMI–deduplicated junction read count, (5) strand, (6) junction start, (7) junction end, (8) anchor lengths, (9) cell barcode, (10) UMI.
+Columns: (1) chrom, (2) read start, (3) read end, (4) Junction read count with same CB-UMI, (5) strand, (6) junction start, (7) junction end, (8) anchor lengths, (9) cell barcode, (10) UMI.
 
 ### 1b. Per-Metacell Junction Statistics
 
@@ -185,7 +185,7 @@ $ISSAC IR extract \
 |------|-------------|
 | `-s` | Strand specificity (`RF` for 3′; `FR` for 5′) |
 | `-b` | Barcode list for the metacell |
-| `-t` | List of intronic sites to quantify non-split read coverage |
+| `-t` | List of splice sites to quantify non-split read coverage |
 | `-a` | Input BAM file |
 | `-o` | Output non-split read file |
 
