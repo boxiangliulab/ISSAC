@@ -15,7 +15,7 @@ ISSAC=../build/ISSAC
 # --- Junction Extraction (10X 3' RNA-seq BAM) ---
 # Extracts splice junctions from a BAM file.
 # -a 8        : Minimum anchor length (bp)
-# -m 50       : Maximum intron length (bp); junctions spanning shorter distances are excluded
+# -m 50       : Minimum intron length (bp); junctions spanning shorter distances are excluded
 # -M 500000   : Maximum intron length (bp); junctions spanning longer distances are excluded
 # -s RF       : Strand specificity (RF = reverse-forward, typical for 10X 3' libraries)
 bamfile=junctions_nonsplit_extract/test.bam
@@ -37,7 +37,7 @@ $ISSAC juncstat -b $barcode -j $output_junc -o $output_stat
 # Extracts reads that do NOT span a splice junction (used for intron retention quantification).
 # -s     : Strand specificity
 # -b     : Barcode list for the metacell
-# -t     : List of intronic sites to quantify non-split read coverage
+# -t     : List of splice sites to quantify non-split read coverage
 # -a     : Input BAM file
 # -o     : Output non-split read file
 site_list=junctions_nonsplit_extract/test.site
@@ -57,7 +57,6 @@ $ISSAC IR extract -s RF -b $barcode -t $site_list -a $bamfile -o $output_nonspli
 ###############################################################
 
 # --- (a) Competitive Intron Phenotype Preparation ---
-# Groups splice sites into intron clusters across metacells.
 # Generates splice site usage ratios for competitive splice sites.
 # -s : File listing sample (metacell) names
 # -j : Directory containing per-metacell .stat files
