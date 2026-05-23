@@ -137,7 +137,7 @@ $ISSAC juncstat \
 |------|-------------|
 | `-b` | Barcode list file defining which barcodes belong to this metacell |
 | `-j` | Junction file produced in the previous step |
-| `-o` | Output statistics file (read counts per junction per metacell) |
+| `-o` | Output statistics file (Barcode-UMI-unique read counts per junction per metacell) |
 
 ### 1c. Non-split Read Extraction
 
@@ -159,7 +159,7 @@ $ISSAC IR extract \
 |------|-------------|
 | `-s` | Strand specificity |
 | `-b` | Barcode list for the metacell |
-| `-t` | List of intronic sites to quantify non-split read coverage |
+| `-t` | List of splice sites to quantify non-split read coverage |
 | `-a` | Input BAM file |
 | `-o` | Output non-split read file |
 
@@ -224,7 +224,7 @@ $ISSAC IR_combine \
 |------|-------------|
 | `-s` | Sample list file |
 | `-f` | Directory containing per-metacell non-split read files |
-| `-l` | List of intronic sites to include |
+| `-l` | List of splice sites to include |
 | `-i` | File for total intron read counts across all metacells |
 | `-o` | Output prefix for IR phenotype files |
 
@@ -292,7 +292,7 @@ $ISSAC model \
 | Flag | Description |
 |------|-------------|
 | `-s` | Filtered splicing phenotype file |
-| `-p` | Genotype principal components (PCs) file for covariate correction |
+| `-p` | Principal components (PCs) file for covariate correction |
 | `-n` | Number of individuals in the GRM file |
 | `-g` | Genetic relatedness matrix (GRM) file for controlling population stratification |
 | `-u` | Output directory/prefix for fitted null model files |
