@@ -60,7 +60,7 @@ test_data/
 ## Installation
 
 ```bash
-git clone https://github.com/your-org/ISSAC.git
+git clone --branch master https://github.com/boxiangliulab/ISSAC.git
 cd ISSAC/build
 ./ISSAC -h
 ```
