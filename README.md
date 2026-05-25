@@ -22,7 +22,7 @@
 
 ## Dependencies
 
-The following C++ libraries must be available in your environment before building ISSAC:
+The following C++ libraries must be available in your environment before building ISSAC (python version:3.8):
 
 1. htslib 1.3
 2. gsl
