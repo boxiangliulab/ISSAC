@@ -206,7 +206,7 @@ $ISSAC pheno_group \
 
 ### 2b. Single Intron Cluster (Intron Retention) Phenotype Preparation
 
-Combines per-metacell non-split read files into a site-level phenotype matrix, quantifying intron retention as the ratio of non-split to total reads at each site.
+Combines per-metacell non-split read files into a site-level phenotype matrix, quantifying intron retention as the ratio of split reads to total reads (both split reads and non-split reads) at each site.
 
 ```bash
 single_intron_site=splice_phenotype_prepare/test_single_intron_site
