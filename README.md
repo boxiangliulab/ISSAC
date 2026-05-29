@@ -42,9 +42,9 @@ conda install -c bioconda htslib=1.3
 ```bash
 git clone --branch master https://github.com/boxiangliulab/ISSAC.git
 cd ISSAC/build
-rm -rf *
-cmake ..
-make
+rm -rf *  ##if you would like to reinstall ISSAC; pre-built ISSAC exists in the directory and could be directly used
+cmake ..  ##
+make      ##
 ./ISSAC -h
 ```
 
