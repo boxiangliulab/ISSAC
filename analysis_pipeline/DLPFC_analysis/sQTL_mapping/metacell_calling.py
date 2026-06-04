@@ -14,20 +14,20 @@ from sklearn.metrics import silhouette_score, calinski_harabasz_score
 
 import sys
 
-meta_size = int(sys.argv[1])
+meta_size = int(sys.argv[1])    ##minimum cell numbers per metacell
 
-cell_type=sys.argv[2]
-norm_choice=sys.argv[3]
+cell_type=sys.argv[2]     ### Prefix of h5ad file
+norm_choice=sys.argv[3]   ### Sequencing Read depth Normalization choice (log transform or SCTransform)
 
 
 if norm_choice=="log_normalize":
-   adata = sc.read_h5ad("/data/projects/11003054/e0950183/AIDA_phaseIfreezeII/rds/"+cell_type+".h5ad")
+   adata = sc.read_h5ad(+cell_type+"_log.h5ad")
 
 if norm_choice=="SCTransform":
-   adata = sc.read_h5ad("/data/projects/11003054/e0950183/AIDA_phaseIfreezeII/rds/"+cell_type+"_SCT.h5ad")
+   adata = sc.read_h5ad(cell_type+"_SCT.h5ad")
 
 X = pd.DataFrame(adata.obsm['X_pca'])
-X.index = adata.obs['DCP_ID'].index ##sample name
+X.index = adata.obs['DCP_ID'].index ##sample name, DCP_ID could be replaced with the sample ID in your h5ad file
 
 adata.obs["meta_cell"] = ""
 meta_info = []
@@ -86,7 +86,7 @@ for i in range(len(inter_donor)):
        cen_PC = pc_matrix.loc[cell_id_clu,:]
        pc_centroid.loc[pc_centroid_index,:]=np.mean(cen_PC,axis=0)
     
-    for cell in unassigned:
+    for cell in unassigned:  
        pc_cell=np.array(pc_matrix.loc[cell,:]).reshape(1,-1)
        D = pairwise_distances(pc_cell,pc_centroid,metric='euclidean')
        min_centroid = pc_centroid.index[D[0]==min(D[0])]
@@ -108,7 +108,7 @@ len(np.unique(whole_label.loc[:,'combine_meta']))
        
 len(np.unique(whole_label.loc[:,'ind_id']))
 
-whole_label.to_csv("/data/projects/11003054/e0950183/ISSAC_revise/02_metacell_size/"+cell_type+norm_choice+str(meta_size)+"_meta.csv",index=False) ##metacell label
+whole_label.to_csv(cell_type+norm_choice+str(meta_size)+"_meta.csv",index=False) ##metacell label
 
-performance.to_csv("/data/projects/11003054/e0950183/ISSAC_revise/02_metacell_size/"+cell_type+norm_choice+str(meta_size)+"_performance.csv",index=True) ##performance of metacell construction
+performance.to_csv(cell_type+norm_choice+str(meta_size)+"_performance.csv",index=True) ##performance of metacell construction
 
