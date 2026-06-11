@@ -2,7 +2,7 @@
 
 ### ISSAC is a scalable tool for single-cell sQTL mapping by modeling metacell splice site usage ratios with a generalized binomial mixed model.
 
-![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/figure1_v2.png)
+![image](https://github.com/tibettiger/ISSAC/blob/ISSAC_analysis/img/figure1_v4.png)
 
 ---
 
