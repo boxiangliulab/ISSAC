@@ -338,7 +338,7 @@ $ISSAC QTL \
 | `-p` | Directory containing pre-fitted null model files |
 | `-w` | cis window size in bp (±500 kb around each splice site) |
 | `-m` | File listing sample names in the same order as the null model files |
-| `-t` | P-value threshold; associations with p > threshold are discarded |
+| `-t` | P-value threshold; associations with P > threshold are discarded |
 > **Note:** Please ensure all dependencies are installed before running the test. Refer to the [Installation](#installation) section for details.
 
 ---
