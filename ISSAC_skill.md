@@ -1,5 +1,5 @@
 ---
-name: issac
+name: ISSAC
 description: >
   Use this skill whenever the user asks about ISSAC (Integrative Single-cell Splicing Analysis
   and QTL Caller), including installation, running the pipeline, sQTL mapping, intron retention
