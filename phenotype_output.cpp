@@ -102,7 +102,7 @@ int pheno_output(int argc,char* argv[]){
     map<string,vector<int>> total_;
     while(getline(fin,line)){
         if(i==-1){
-             while(line.find(' ')<100000000){
+             while(line.find(' ')!= string::npos){
                 sample=line.substr(0,line.find(' '));
                 splice_name.push_back(sample);
                 tmp_line=line.substr(line.find(' ')+1);
@@ -118,7 +118,7 @@ int pheno_output(int argc,char* argv[]){
             chr_tmp=splice_site.substr(0,splice_site.find(':'));
             splice_[splice_site]=Mylist();
             total_[splice_site]=Mylist();
-            while(line.find(' ')<100000000){
+            while(line.find(' ')!= string::npos){
                 readcount=line.substr(0,line.find(' '));
                 sp_count=stoi(readcount.substr(0,readcount.find(':')));
                 to_count=stoi(readcount.substr(readcount.find(':')+1));

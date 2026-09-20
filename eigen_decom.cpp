@@ -109,54 +109,45 @@ int QTL_mapping::read_in_splice(){
     ifstream fin;
     fin.open(splice_file_);
     if (!fin.is_open()) {
-            cerr << "Failed to open the phenotype file." << endl;
-            return 1; // Or handle the error as appropriate
-            }
+        cerr << "Failed to open the phenotype file." << endl;
+        return 1;
+    }
     int i=-1;
     string line,sample,tmp_line;
     string splice_site,readcount;
-    string chr_tmp;
     int sp_count,to_count;
     while(getline(fin,line)){
         if(i==-1){
-             while(line.find(' ')<100000000){
+            while(line.find(' ')!= string::npos){
                 sample=line.substr(0,line.find(' '));
                 splice_name.push_back(sample);
                 tmp_line=line.substr(line.find(' ')+1);
                 line=tmp_line;
             }
-            sample=line.substr(0,line.find('\n'));
-            splice_name.push_back(sample);
+            splice_name.push_back(line);
         }
         else{
             splice_site=line.substr(0,line.find(' '));
             tmp_line=line.substr(line.find(' ')+1);
             line=tmp_line;
-            chr_tmp=splice_site.substr(0,splice_site.find(':'));
-            chr_=chr_tmp; // avoid only one chr could be read in
-            if(chr_tmp==chr_){
-                splice_[splice_site]=Mylist();
-                splice_unsplice_[splice_site]=Mylist();
-                while(line.find(' ')<100000000){
-                    readcount=line.substr(0,line.find(' '));
-                    sp_count=stoi(readcount.substr(0,readcount.find(':')));
-                    to_count=stoi(readcount.substr(readcount.find(':')+1));
-                    splice_[splice_site].push_back(sp_count);
-                    splice_unsplice_[splice_site].push_back(to_count);
-                    tmp_line=line.substr(line.find(' ')+1);
-                    line=tmp_line;
-                }
-                splice_site_.push_back(splice_site);
-                cout<<"addi"<<line<<endl;
-                //readcount=line.substr(0,line.find(' '));
-                readcount = line;
-                cout<<readcount<<endl;
+
+            splice_[splice_site]=Mylist();
+            splice_unsplice_[splice_site]=Mylist();
+            while(line.find(' ')!= string::npos){
+                readcount=line.substr(0,line.find(' '));
                 sp_count=stoi(readcount.substr(0,readcount.find(':')));
                 to_count=stoi(readcount.substr(readcount.find(':')+1));
-                //cout<<splice_site<<"\t"<<sp_count<<"\t"<<to_count<<endl;
                 splice_[splice_site].push_back(sp_count);
                 splice_unsplice_[splice_site].push_back(to_count);
+                tmp_line=line.substr(line.find(' ')+1);
+                line=tmp_line;
             }
+            splice_site_.push_back(splice_site);
+            readcount = line;
+            sp_count=stoi(readcount.substr(0,readcount.find(':')));
+            to_count=stoi(readcount.substr(readcount.find(':')+1));
+            splice_[splice_site].push_back(sp_count);
+            splice_unsplice_[splice_site].push_back(to_count);
         }
         i++;
     }
@@ -169,27 +160,26 @@ vector<Eigen::VectorXd> QTL_mapping::read_in_PC(){
     ifstream fin;
     fin.open(PC_);
     if (!fin.is_open()) {
-            cerr << "Failed to open the PC file." << endl;
-             // Or handle the error as appropriate
-            }
+        cerr << "Failed to open the PC file." << endl;
+        return vector<Eigen::VectorXd>();
+    }
     string line,tmp_val,sample,tmp_line;
     double val;
     vector<Eigen::VectorXd> vectors_val_PC;
     int i = -1;
     while(getline(fin,line)){
-         if(i==-1){
-             while(line.find('\t')<100000000){
+        if(i==-1){
+            while(line.find('\t')!= string::npos){
                 sample=line.substr(0,line.find('\t'));
                 PC_name.push_back(sample);
                 tmp_line=line.substr(line.find('\t')+1);
                 line=tmp_line;
             }
-            sample=line.substr(0,line.find('\n'));
-            PC_name.push_back(sample);
+            PC_name.push_back(line);
         }
         else{
             Eigen::VectorXd val_PC(0);
-            while(line.find('\t')<100000000){
+            while(line.find('\t')!= string::npos){
                 tmp_val=line.substr(0,line.find('\t'));
                 val = stod(tmp_val);
                 val_PC.conservativeResize(val_PC.size() + 1);
@@ -197,8 +187,7 @@ vector<Eigen::VectorXd> QTL_mapping::read_in_PC(){
                 tmp_line=line.substr(line.find('\t')+1);
                 line=tmp_line;
             }
-            tmp_val=line.substr(0,line.find('\n'));
-            val = stod(tmp_val);
+            val = stod(line);
             val_PC.conservativeResize(val_PC.size() + 1);
             val_PC(val_PC.size()-1) = val;
             vectors_val_PC.push_back(val_PC);
