@@ -117,7 +117,6 @@ string USRExtractor::get_new_USR_name() {
 void USRExtractor::set_USR_strand_flag(bam1_t *aln, USR& j1) {
     uint32_t flag = (aln->core).flag;
     int reversed      = (flag >> 4) & 1;
-    int mate_reversed = (flag >> 5) & 1;
     int first_in_pair = (flag >> 6) & 1;
     int second_in_pair= (flag >> 7) & 1;
     int bool_strandness = strandness_ - 1;  // 0 for RF, 1 for FR
@@ -125,7 +124,7 @@ void USRExtractor::set_USR_strand_flag(bam1_t *aln, USR& j1) {
     if (first_in_pair) {
     strand_flag = !bool_strandness ^ reversed;
     } else if (second_in_pair) {
-    strand_flag = !bool_strandness ^ !mate_reversed;  // second read is opposite
+    strand_flag = !bool_strandness ^ !reversed;  // second read is opposite
     } else {
     // unpaired read
     strand_flag = !bool_strandness ^ reversed;
@@ -134,251 +133,459 @@ void USRExtractor::set_USR_strand_flag(bam1_t *aln, USR& j1) {
     return;
 }
 
-void USRExtractor::set_site(USR& j1){
-    //search for the site possible covered by j1
-    string chrom_strand=j1.chrom+":"+j1.strand;
-    int read_len=500000;
-    int start_tmp=start_pos[chrom_strand];
-    for(int i=start_tmp;i<sitelist[chrom_strand].size();i++){
-        if(j1.start>=sitelist[chrom_strand][i]){
+void USRExtractor::set_site(USR& j1, int alignment_end) {
+
+    string chrom_strand = j1.chrom + ":" + j1.strand;
+
+    int start_tmp = start_pos[chrom_strand];
+
+    for (int i = start_tmp;
+         i < sitelist[chrom_strand].size();
+         ++i) {
+
+        int site = sitelist[chrom_strand][i];
+
+        if (j1.start >= site) {
             start_pos[chrom_strand] = i;
         }
-        if((j1.start<sitelist[chrom_strand][i])&&(sitelist[chrom_strand][i]<j1.start+read_len)){
-            j1.site_pos.insert(sitelist[chrom_strand][i]);
+
+        if ((j1.start < site) &&
+            (site <= alignment_end)) {
+            j1.site_pos.insert(site);
         }
-        if(j1.start+read_len <= sitelist[chrom_strand][i]){
+
+        if (alignment_end < site) {
             break;
         }
     }
 }
 
-int USRExtractor::parse_alignment_into_unspliced_read(bam_hdr_t *header, bam1_t *aln) {
+int USRExtractor::parse_alignment_into_unspliced_read(
+    bam_hdr_t *header,
+    bam1_t *aln) {
     int n_cigar = aln->core.n_cigar;
     USR j1;
-    uint8_t *cb = bam_aux_get(aln, "CB");  // Get the cell barcode
-    uint8_t *ub = bam_aux_get(aln, "UB");  // Get the UMI
-    if(!(cb&&ub))return 0;
-    j1.CB = bam_aux2Z(cb); 
-    j1.UB = bam_aux2Z(ub);
-    if(!((aln->core.tid)&&(aln->core.pos)))return 0;
+
+    // Skip unmapped reads
+    if (aln->core.flag & BAM_FUNMAP) return 0;
+
+    // Get cell barcode and UMI
+    uint8_t *cb = bam_aux_get(aln, "CB");
+    uint8_t *ub = bam_aux_get(aln, "UB");
+    if (!(cb && ub)) return 0;
+
+    const char *cb_str = bam_aux2Z(cb);
+    const char *ub_str = bam_aux2Z(ub);
+    if (!(cb_str && ub_str)) return 0;
+
+    j1.CB = cb_str;
+    j1.UB = ub_str;
+
+    // Filter barcode early
+    if (barcodeset.find(j1.CB) == barcodeset.end()) {
+        return 0;
+    }
+
     int chr_id = aln->core.tid;
-    if((chr_id>22)||(chr_id<1))return 0;
+    if (chr_id < 0 || chr_id >= header->n_targets) return 0;
+
     int read_pos = aln->core.pos;
     string chr(header->target_name[chr_id]);
-    if(chr.find("chr")==string::npos)return 0;
+
+    // Require chromosome names beginning with "chr"
+    if (chr.rfind("chr", 0) != 0) return 0;
+
+    // Restrict to autosomes chr1-chr22
+    string chr_suffix = chr.substr(3);
+
+    try {
+        int chr_num = stoi(chr_suffix);
+
+        // Ensure the entire suffix is numeric
+        if (chr_suffix != to_string(chr_num)) return 0;
+
+        if (chr_num < 1 || chr_num > 22) return 0;
+    } catch (const std::exception&) {
+        return 0;
+    }
+
     j1.chrom = chr;
-    j1.start = read_pos; 
-    set_USR_strand_flag(aln, j1); 
-    set_site(j1);
-    
-    if(j1.site_pos.size()==0)return 0;
-    
-    auto it = find(barcodelist.begin(),barcodelist.end(),j1.CB);
-    
-    if(it==barcodelist.end()){
-        return 0;
-    }
-    
-    if(j1.site_pos.size()==0){
-        return 0;
-    }
-    
+    j1.start = read_pos;
+
+    set_USR_strand_flag(aln, j1);
+
+    // Actual reference end of this alignment
+    int alignment_end = bam_endpos(aln);
+
+    // Find candidate sites only within the alignment span
+    set_site(j1, alignment_end);
+
+    if (j1.site_pos.empty()) return 0;
+
     uint32_t *cigar = bam_get_cigar(aln);
-    if(!(cigar))return 0;
+    if (!cigar) return 0;
+
     set<int> possible_site;
+
     for (int i = 0; i < n_cigar; ++i) {
-        char op =
-               bam_cigar_opchr(cigar[i]);
-        int len =
-               bam_cigar_oplen(cigar[i]);
-        switch(op) {
-            case 'N':  //for competitive read count
-                j1.start = j1.start + len;
+
+        char op = bam_cigar_opchr(cigar[i]);
+        int len = bam_cigar_oplen(cigar[i]);
+
+        switch (op) {
+
+            case 'N':
+                // Reference skip
+                j1.start += len;
                 break;
+
             case '=':
-                for(set<int>::iterator it = j1.site_pos.begin();it!=j1.site_pos.end();++it){
-                    if((*it>j1.start+1)&&(*it<j1.start+len-1)){
-                        possible_site.insert(*it);
-                    }
-                }
-                j1.start = j1.start + len;
-                break;
             case 'M':
-                for(set<int>::iterator it = j1.site_pos.begin();it!=j1.site_pos.end();++it){
-                    if((*it>j1.start+1)&&(*it<j1.start+len-1)){
+                for (set<int>::iterator it = j1.site_pos.begin();
+                     it != j1.site_pos.end(); ++it) {
+
+                    if ((*it > j1.start + 1) &&
+                        (*it < j1.start + len - 1)) {
                         possible_site.insert(*it);
                     }
                 }
-                j1.start = j1.start + len;
+
+                j1.start += len;
                 break;
-            //No mismatches allowed in anchor
+
+            // No mismatches/deletions allowed in anchor
             case 'D':
-                j1.start = j1.start + len;
-                break;
             case 'X':
-                j1.start = j1.start +len;
+                j1.start += len;
                 break;
+
+            // Do not consume reference
             case 'I':
             case 'S':
             case 'H':
+            case 'P':
                 break;
+
             default:
-                cerr << "Unknown cigar " << op;
+                cerr << "Unknown CIGAR operation: " << op << endl;
                 break;
         }
     }
+
     j1.site_pos = possible_site;
-    if(j1.site_pos.size()>0){
+
+    if (!j1.site_pos.empty()) {
         add_USR(j1);
     }
+
     return 0;
 }
 
 
-int USRExtractor::identify_USR_from_BAM(){
-    if(!bam_.empty()) {
-        //read in barcode list && sitelist
-        ifstream fin;
-        fin.open(barcodes_file_);
-        if (!fin.is_open()) {
-            cerr << "Failed to open the barcode file." << endl;
-            return 1; // Or handle the error as appropriate
-            }
-        string line;
+int USRExtractor::identify_USR_from_BAM() {
 
-        while(getline(fin,line)){
-        barcodelist.push_back(line);
-        }
-        fin.close();
-        ifstream fin1;
-        fin1.open(sites_file_);
-        if (!fin1.is_open()) {
-            cerr << "Failed to open the site file." << endl;
-            return 1; // Or handle the error as appropriate
-            }
-        string chrom, tmp_1, strand, tmp_2, pos;
-        string chrom_strand;
-        while(getline(fin1,line)){
-            chrom = line.substr(0,line.find(":"));
-            tmp_1 = line.substr(line.find(":")+1);
-            strand = tmp_1.substr(0,tmp_1.find(":"));
-            tmp_2 = tmp_1.substr(tmp_1.find(":")+1);
-            pos = tmp_2.substr(0,tmp_2.find(":"));
-            int pos_int = stoi(pos);
-            chrom_strand = chrom + ":" + strand;
-            sitelist[chrom_strand].push_back(pos_int);
-            sort(sitelist[chrom_strand].begin(),sitelist[chrom_strand].end());
-        }
-        fin1.close();
-        for(int i=0;i<sitelist["chr1:+"].size();i++){
-            cout<<sitelist["chr1:+"][i]<<endl;
-        }
-
-        for(int i=1;i<=22;i++){
-            chrom_strand="chr"+to_string(i)+":+";
-            start_pos[chrom_strand]=0;
-            chrom_strand="chr"+to_string(i)+":-";
-            start_pos[chrom_strand]=0;
-        }
-        //open BAM for reading
-        samFile *in = sam_open(bam_.c_str(), "r");
-        //
-        cout<<"test1"<<endl;
-        if(in == NULL) {
-            throw runtime_error("Unable to open BAM/SAM file.\n\n");
-        }
-        //Load the index
-        hts_idx_t *idx = sam_index_load(in, bam_.c_str());
-        if(idx == NULL) {
-            throw runtime_error("Unable to open BAM/SAM index."
-                                " Make sure alignments are indexed\n\n");
-        }
-        //Get the header
-        bam_hdr_t *header = sam_hdr_read(in);
-        //Initialize iterator
-        hts_itr_t *iter = NULL;
-        //Move the iterator to the region we are interested in
-        iter  = sam_itr_querys(idx, header, region_.c_str());
-        if(header == NULL || iter == NULL) {
-            sam_close(in);
-            throw runtime_error("Unable to iterate to region within BAM.\n\n");
-        }
-        cout<<"test2"<<endl;
-        //Initiate the alignment record
-        bam1_t *aln = bam_init1();
-        cout<<"test2"<<endl;
-        while(sam_itr_next(in, iter, aln) >= 0) {
-            parse_alignment_into_unspliced_read(header, aln);
-        }
-        cout<<"test3"<<endl;
-        hts_itr_destroy(iter);
-        cout<<"test4"<<endl;
-        hts_idx_destroy(idx);
-        cout<<"test5"<<endl;
-        bam_destroy1(aln);
-        cout<<"test6"<<endl;
-        //bam_hdr_destroy(header);
-        sam_close(in);
+    if (bam_.empty()) {
+        return 0;
     }
+
+    // ============================================================
+    // 1. Read barcode list
+    // ============================================================
+    fstream fin(barcodes_file_);
+    if (!fin.is_open()) {
+    cerr << "Failed to open the barcode file: "
+         << barcodes_file_ << endl;
+    return 1;}
+    string line;
+    while (getline(fin, line)) {
+    if (!line.empty()) {
+        barcodelist.push_back(line);
+    }}
+    fin.close();
+
+// Build barcode set for fast lookup during BAM processing
+    barcodeset.insert(barcodelist.begin(), barcodelist.end());
+
+    // ============================================================
+    // 2. Read splice-site list
+    // ============================================================
+    ifstream fin1(sites_file_);
+
+    if (!fin1.is_open()) {
+        cerr << "Failed to open the site file: "
+             << sites_file_ << endl;
+        return 1;
+    }
+
+    string chrom;
+    string strand;
+    string pos;
+    string chrom_strand;
+
+    while (getline(fin1, line)) {
+
+        if (line.empty()) {
+            continue;
+        }
+
+        // Expected format:
+        // chr:strand:position[:...]
+        //
+        // Example:
+        // chr1:+:123456
+
+        size_t p1 = line.find(':');
+
+        if (p1 == string::npos) {
+            cerr << "Invalid site entry: " << line << endl;
+            continue;
+        }
+
+        size_t p2 = line.find(':', p1 + 1);
+
+        if (p2 == string::npos) {
+            cerr << "Invalid site entry: " << line << endl;
+            continue;
+        }
+
+        size_t p3 = line.find(':', p2 + 1);
+
+        chrom = line.substr(0, p1);
+        strand = line.substr(p1 + 1, p2 - p1 - 1);
+
+        if (p3 == string::npos) {
+            pos = line.substr(p2 + 1);
+        } else {
+            pos = line.substr(p2 + 1, p3 - p2 - 1);
+        }
+
+        // Only accept valid strands
+        if (strand != "+" && strand != "-") {
+            cerr << "Invalid strand in site entry: "
+                 << line << endl;
+            continue;
+        }
+
+        int pos_int;
+
+        try {
+            pos_int = stoi(pos);
+        }
+        catch (const std::exception&) {
+            cerr << "Invalid genomic position in site entry: "
+                 << line << endl;
+            continue;
+        }
+
+        chrom_strand = chrom + ":" + strand;
+
+        sitelist[chrom_strand].push_back(pos_int);
+    }
+
+    fin1.close();
+
+
+    // ============================================================
+    // 3. Sort site lists once after all sites have been loaded
+    // ============================================================
+    for (auto &entry : sitelist) {
+        sort(entry.second.begin(), entry.second.end());
+    }
+
+
+    // ============================================================
+    // 4. Initialize site-search positions
+    // ============================================================
+    for (int i = 1; i <= 22; ++i) {
+
+        chrom_strand = "chr" + to_string(i) + ":+";
+        start_pos[chrom_strand] = 0;
+
+        chrom_strand = "chr" + to_string(i) + ":-";
+        start_pos[chrom_strand] = 0;
+    }
+
+
+    // ============================================================
+    // 5. Open BAM/SAM file
+    // ============================================================
+    samFile *in = sam_open(bam_.c_str(), "r");
+
+    if (in == NULL) {
+        throw runtime_error(
+            "Unable to open BAM/SAM file: " + bam_ + "\n"
+        );
+    }
+
+
+    // ============================================================
+    // 6. Load BAM index
+    // ============================================================
+    hts_idx_t *idx = sam_index_load(in, bam_.c_str());
+
+    if (idx == NULL) {
+
+        sam_close(in);
+
+        throw runtime_error(
+            "Unable to open BAM/SAM index. "
+            "Make sure the alignment file is coordinate-sorted "
+            "and indexed.\n"
+        );
+    }
+
+
+    // ============================================================
+    // 7. Read BAM header
+    // ============================================================
+    bam_hdr_t *header = sam_hdr_read(in);
+
+    if (header == NULL) {
+
+        hts_idx_destroy(idx);
+        sam_close(in);
+
+        throw runtime_error(
+            "Unable to read BAM/SAM header.\n"
+        );
+    }
+
+
+    // ============================================================
+    // 8. Create iterator for requested region
+    // ============================================================
+    hts_itr_t *iter =
+        sam_itr_querys(idx, header, region_.c_str());
+
+    if (iter == NULL) {
+
+        bam_hdr_destroy(header);
+        hts_idx_destroy(idx);
+        sam_close(in);
+
+        throw runtime_error(
+            "Unable to iterate over region: "
+            + region_ + "\n"
+        );
+    }
+
+
+    // ============================================================
+    // 9. Allocate alignment record
+    // ============================================================
+    bam1_t *aln = bam_init1();
+
+    if (aln == NULL) {
+
+        hts_itr_destroy(iter);
+        bam_hdr_destroy(header);
+        hts_idx_destroy(idx);
+        sam_close(in);
+
+        throw runtime_error(
+            "Unable to allocate BAM alignment record.\n"
+        );
+    }
+
+
+    // ============================================================
+    // 10. Process alignments
+    // ============================================================
+    while (sam_itr_next(in, iter, aln) >= 0) {
+
+        parse_alignment_into_unspliced_read(
+            header,
+            aln
+        );
+    }
+
+
+    // ============================================================
+    // 11. Clean up
+    // ============================================================
+    bam_destroy1(aln);
+    hts_itr_destroy(iter);
+    bam_hdr_destroy(header);
+    hts_idx_destroy(idx);
+    sam_close(in);
+
+
     return 0;
 }
 
 //Add a junction to the junctions map
 //The read_count field is the number of reads supporting the junction.
-int USRExtractor::add_USR(USR j1) {
+int USRExtractor::add_USR(const USR& j1) {
 
-    for (int element : j1.site_pos){
-        string key = j1.chrom + string(":") + to_string(element) + ":" + j1.strand + ":" + j1.CB + ":" + j1.UB;  
-        USR_[key] +=1;
-        cout<<key<<"\t"<<USR_[key]<<endl;
+    for (int element : j1.site_pos) {
+
+        string key =
+            j1.chrom + ":" +
+            to_string(element) + ":" +
+            j1.strand + ":" +
+            j1.CB + ":" +
+            j1.UB;
+
+        USR_[key] += 1;
     }
-    
+
     return 0;
 }
 
 
-//Print all the junctions - this function needs work
-void USRExtractor::print_all_USR(ostream& out) {
-    ofstream fout;
-    if(output_file_ != string("NA")) {
-        fout.open(output_file_.c_str());
+void USRExtractor::print_all_USR() {
+
+    if (output_file_ == "NA") {
+        return;
     }
-    for(map<string,int> :: iterator it = USR_.begin();
-        it != USR_.end(); it++) {
-        fout<<it->first<<"\t"<<it->second<<endl;
+
+    ofstream fout(output_file_);
+
+    if (!fout.is_open()) {
+        throw runtime_error(
+            "Unable to open output file: " + output_file_
+        );
     }
-    if(fout.is_open())
-        fout.close();
+
+    for (const auto& entry : USR_) {
+        fout << entry.first
+             << "\t"
+             << entry.second
+             << "\n";
+    }
 }
 
 
-
-
-//Run 'junctions extract'
 int IR_extract(int argc, char *argv[]) {
+
     USRExtractor extract;
+
     try {
+
         extract.parse_options(argc, argv);
-        extract.identify_USR_from_BAM();
+
+        int status = extract.identify_USR_from_BAM();
+
+        if (status != 0) {
+            return status;
+        }
+
         extract.print_all_USR();
-    } catch(const common::cmdline_help_exception& e) {
+
+    }
+    catch (const common::cmdline_help_exception& e) {
         cerr << e.what() << endl;
         return 0;
-    } catch(const runtime_error& error) {
+    }
+    catch (const runtime_error& error) {
         cerr << error.what() << endl;
         return 1;
     }
+
     return 0;
 }
 
-int IR_usage() {
-    cout << "Usage:\t\t" << "extract nonsplit reads crossing splice sites <command> [options]" << endl;
-    cout << "Command:\t" << "extract\t\tIdentify UMI-based nonsplit reads from alignments." << endl;
-    cout << endl;
-    return 0;
-}
 
-//Parse out subcommands under junctions
 int IR_main(int argc, char *argv[]) {
     if(argc > 1) {
         string subcmd(argv[1]);
@@ -389,7 +596,14 @@ int IR_main(int argc, char *argv[]) {
     return IR_usage();
 }
 
-
-
-
+int IR_usage() {
+    cout << "Usage:\t\t"
+         << "extract nonsplit reads crossing splice sites <command> [options]"
+         << endl;
+    cout << "Command:\t"
+         << "extract\t\tIdentify UMI-based nonsplit reads from alignments."
+         << endl;
+    cout << endl;
+    return 0;
+}
 

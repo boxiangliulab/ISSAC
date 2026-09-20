@@ -9,8 +9,8 @@ ISSAC provides a complete pipeline for single-cell splicing analysis, including:
 - Single-cell level junction extraction
 - Site-based splice event quantification
 - Null binomial model construction
-- Score tests for cis- and trans-sQTL mapping
-- Differential splicing analysis
+- Score tests for cis-sQTL mapping
+
 
 ---
 
@@ -121,7 +121,7 @@ $ISSAC junctools extract \
 
 ### 1b. Per-Metacell Junction Statistics
 
-Aggregates junction read counts per barcode (metacell).
+Aggregates UMI-collapsed junction counts for each metacell using its associated barcode list.
 
 ```bash
 barcode=junctions_nonsplit_extract/metacell1.barcode
@@ -206,7 +206,7 @@ $ISSAC pheno_group \
 
 ### 2b. Single Intron Cluster (Intron Retention) Phenotype Preparation
 
-Combines per-metacell non-split read files into a site-level phenotype matrix, quantifying intron retention as the ratio of non-split to total reads at each site.
+Combines per-metacell non-split read files with junction read counts to generate site-level phenotypes for intron-retention-related splicing events. The output records splice-supporting reads and total reads (splice-supporting + non-split reads) at each site.
 
 ```bash
 single_intron_site=splice_phenotype_prepare/test_single_intron_site
@@ -224,13 +224,13 @@ $ISSAC IR_combine \
 |------|-------------|
 | `-s` | Sample list file |
 | `-f` | Directory containing per-metacell non-split read files |
-| `-l` | List of splice sites to include |
+| `-l` | Splice-site list file |
 | `-i` | File for total intron read counts across all metacells |
 | `-o` | Output prefix for IR phenotype files |
 
 ### 2c. Phenotype Filtering
 
-Filters out splice sites with low variance or high sparsity, retaining only informative sites for QTL mapping. Apply to both competitive intron and IR phenotype files.
+Filters out splice sites with low variability or high sparsity, retaining only informative sites for QTL mapping. Apply to both competitive intron and IR phenotype files. Splice-site usage variability is calculated using non-missing observations. For retained sites, metacells with zero total read count are imputed using the median numerator and denominator counts across non-missing metacells.
 
 **Competitive intron sites:**
 
@@ -262,14 +262,14 @@ $ISSAC pheno_output \
 | `-r` | Input site phenotype file |
 | `-o` | Filtered output phenotype file |
 | `-p` | Output file for per-site usage proportions |
-| `-s` | Minimum variance threshold (sites below this are excluded) |
-| `-n` | Maximum sparsity threshold (sites with more zero/missing values than this fraction are excluded) |
+| `-s` | Minimum standard deviation threshold for splice-site usage |
+| `-n` | Maximum missing-data fraction (sites with more zero total read count are treated as missing) |
 
 ---
 
 ## Step 3: Model Construction & QTL Mapping
 
-Fits a binomial mixed model (GLMM) per splice site using a genetic relatedness matrix (GRM) to control for population structure, then performs cis-sQTL mapping within a defined window around each site.
+Fits a binomial mixed model (GLMM) per splice site using a genetic relatedness matrix (GRM) to account for genetic relatedness and population structure, then performs cis-sQTL mapping within a defined window around each site.
 
 ### 3a. Null Model Construction
 
@@ -286,17 +286,24 @@ $ISSAC model \
   -n 617 \
   -g model_construct_QTL_mapping/GRM.txt \
   -u model_construct_QTL_mapping/model \
-  -t 10
+  -t 10 \
+  -v 0.05 \
+  -i 30 \
+  -l 0.001
 ```
 
-| Flag | Description |
-|------|-------------|
-| `-s` | Filtered splicing phenotype file |
-| `-p` | Principal components (PCs) file for covariate correction |
-| `-n` | Number of individuals in the GRM file |
-| `-g` | Genetic relatedness matrix (GRM) file for controlling population stratification |
-| `-u` | Output directory/prefix for fitted null model files |
-| `-t` | Number of normalization parameter estimation iterations (×10) |
+| Flag | Description                                                                           |
+| ---- | ------------------------------------------------------------------------------------- |
+| `-s` | Filtered splicing phenotype file                                                      |
+| `-p` | Principal components (PCs) file for covariate correction                              |
+| `-n` | Number of individuals in the GRM file                                                 |
+| `-g` | Genetic relatedness matrix (GRM) file for modeling genetic relatedness                |
+| `-u` | Output directory/prefix for fitted null model files                                   |
+| `-t` | Number of normalization parameter estimation iterations (×100)                        |
+| `-v` | GRM sparsification threshold; relatedness values below this threshold are set to zero |
+| `-i` | Maximum number of iterations for estimating fixed and random effects                  |
+| `-l` | Convergence threshold for iterative parameter estimation (default: 0.001)             |
+
 
 Collect sites for which null models were successfully built:
 

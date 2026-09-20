@@ -1,4 +1,4 @@
-# Install script for directory: /data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25
+# Install script for directory: /data/projects/11003054/e0950183/ISSAC_revise_second_review/ISSAC_9_17_upload_github
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/data/projects/11003054/e0950183/ISSAC_revise/ISSAC_3_25/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/data/projects/11003054/e0950183/ISSAC_revise_second_review/ISSAC_9_17_upload_github/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

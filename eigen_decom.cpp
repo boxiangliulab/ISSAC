@@ -43,7 +43,7 @@ int QTL_mapping::parse_options(int argc, char *argv[]) {
     optind = 1; //Reset before parsing again.
     int c;
     stringstream help_ss;
-    while((c = getopt(argc, argv, "hs:u:p:g:n:t:")) != -1) {
+    while((c = getopt(argc, argv, "hs:u:p:g:v:n:i:l:t:")) != -1) {
         switch(c) {
             case 'h':
                 cout << "Usage: program [options]\n"
@@ -53,7 +53,10 @@ int QTL_mapping::parse_options(int argc, char *argv[]) {
                 << "  -u <path>   Output path\n"
                 << "  -p <file>   Principal components (PC) file\n"
                 << "  -g <file>   GRM file\n"
+                << "  -v <file>   GRM relatedness with less than the value will be cleaned to 0\n"
                 << "  -n <int>    Number of GRM samples\n"
+                << "  -i <int>    Number of maximum iteration times for estimating fixed and random effect \n"
+                << "  -l <int>    iteration ending setting (default: 0.001)\n"
                 << "  -t <int>    Times of normalize parameters estimation (*100)\n";
                 exit(0);
             case 's':
@@ -68,8 +71,17 @@ int QTL_mapping::parse_options(int argc, char *argv[]) {
             case 'g':
                 GRM_ = string(optarg);
                 break;
+            case 'v':
+                GRM_val_ = stod(string(optarg));
+                break;
             case 'n':
                 GRM_num_ = string(optarg);
+                break;
+            case 'i':
+                iter_time_ = stoi(string(optarg));
+                break;
+            case 'l':
+                iter_thre_ = stod(string(optarg));
                 break;
             case 't':
                 time_ = stoi(string(optarg));
@@ -228,7 +240,7 @@ Eigen::SparseMatrix<double> QTL_mapping::read_in_GRM() {
              for(int j=0;j<n;j++){
                 tmp_val = line.substr(0,line.find(' '));
                 val = stod(tmp_val);
-                if(val>0.3){
+                if(val>GRM_val_){
                 GRM.insert(i,j) = val;}
                 if(j<n-1){
                     tmp_line=line.substr(line.find(' ')+1);
@@ -323,16 +335,12 @@ Eigen::VectorXd REMLOptimizer::compute_V_inv_X(Eigen::SparseMatrix<double> resul
     
     x = cg.solve(b);
 
-    // Check for convergence
-    //if (cg.info() == Eigen::Success) {
-    //    std::cout << "Conjugate Gradient converged successfully." << std::endl;
-    //} else {
-    //    std::cout << "Conjugate Gradient failed to converge." << std::endl;
-    //}
+    if (cg.info() != Eigen::Success) {
+    std::cerr << "Warning: Conjugate Gradient failed to converge." << std::endl;}
     // Output the number of iterations and the solution's first 10 elements
-    //std::cout << "Number of iterations: " << cg.iterations() << std::endl;
-    //std::cout << "Estimated error: " << cg.error() << std::endl;
-    //std::cout << "First 10 elements of the solution vector x: " << x.head(10).transpose() << std::endl;
+    /*std::cout << "Number of iterations: " << cg.iterations() << std::endl;
+    std::cout << "Estimated error: " << cg.error() << std::endl;
+    std::cout << "First 10 elements of the solution vector x: " << x.head(10).transpose() << std::endl;*/
     return x;
 }
 
@@ -378,20 +386,18 @@ void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result,Eigen
     Eigen::MatrixXd X_cons = addConstant(PCXd);  // X_cons will have an intercept column
     cout<<"X_cons"<<X_cons.cols()<<"\t"<<X_cons.rows()<<endl;
     // Perform IRLS to obtain beta estimates for the Binomial GLM
-    Eigen::VectorXd beta_hat = IRLS(X_cons, splice_numXd, total_numXd, 10, 1e-3);
+    Eigen::VectorXd beta_hat = IRLS(X_cons, splice_numXd, total_numXd, iter_time_, iter_thre_);
     cout<<"splice site:"<<splice_numXd.size()<<"\t"<<total_numXd.size()<<endl;
     //Eigen::VectorXd beta_hat = Eigen::VectorXd::Zero(X_cons.cols());
     cout<<beta_hat<<endl;
     Eigen::VectorXd eta = X_cons * beta_hat;
     //cout<<eta<<endl;
     // optimize to find the best estimates for tau
-    int iter=20;
-    double tol = 1e-6;
     Eigen::MatrixXd mat(3,3);
     mat.setRandom();
     //initialize u_hat
     Eigen::VectorXd u_hat = Eigen::VectorXd::Zero(splice_numXd.size());
-    REMLOptimizer tmp(eta, X_cons, beta_hat, u_hat, splice_numXd, total_numXd, result, iter, tol,mat,0);
+    REMLOptimizer tmp(eta, X_cons, beta_hat, u_hat, splice_numXd, total_numXd, result, iter_time_, iter_thre_,mat,0);
     try {
         tmp.update(splice_numXd,total_numXd);
     } catch (std::exception &e) {
@@ -409,20 +415,11 @@ void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result,Eigen
 
 
 void QTL_mapping::test(){
-    // Generate a large sparse symmetric positive-definite matrix A (3000x3000)
     //read in identity matrix
     Eigen::SparseMatrix<double> A = read_in_GRM();
     cout<<A.rows()<<"\t"<<A.cols()<<endl;
     cout<<"read in GRM success"<<endl;
-    
-    int max_iteration=100;
-    double tol=1e-6;
-    //Eigen::VectorXd b(n);
-    //b.setRandom();
-    //Eigen::VectorXd x = compute_V_inv_X(result, b, n, max_iteration, tol);
-    //cout<<x.head(10).transpose()<<endl;
-    //double log_det = logAbsDeterminant(result);
-    //cout<<log_det<<endl;
+
     cout<<PC_<<endl;
     vector<Eigen::VectorXd> test_PC=read_in_PC();
     int n = test_PC[0].size();
@@ -467,10 +464,10 @@ Eigen::VectorXd QTL_mapping::IRLS(const Eigen::MatrixXd& X, const Eigen::VectorX
     cout<<X.cols()<<"\t"<<X.rows()<<endl;
     cout<<y.size()<<"\t"<<total.size()<<endl;
     Eigen::VectorXd beta = Eigen::VectorXd::Zero(p);  // Initialize beta
+    Eigen::VectorXd pre_beta = Eigen::VectorXd::Zero(p);  // Store beta from previous iteration
     Eigen::VectorXd eta, pi,mu, z, XtWy,W;
     Eigen::MatrixXd W_diag, XtW, XtWX;
     Eigen::SparseMatrix<double> XtWX_sparse;
-    double pre_beta = 0;
     for (int iter = 0; iter < maxIter; ++iter) {
         // Step 1: Compute eta = X * beta
         eta = X * beta;
@@ -481,25 +478,18 @@ Eigen::VectorXd QTL_mapping::IRLS(const Eigen::MatrixXd& X, const Eigen::VectorX
         // Step 3: Compute the working dependent variable z
         z = eta.array() + (y.array() - mu.array()) / (total.array()* pi.array() * (1 - pi.array()));
         cout<<z.size()<<endl;
-        // Step 4: Compute weights (W_diag = mu * (1 - mu))
-        W = ((pi.array()*(1-pi.array()))).matrix();
+        // Step 4: Compute weights 
+        W = (total.array() * (pi.array()*(1-pi.array()))).matrix();
         W_diag = W.asDiagonal();
-        //Eigen::MatrixXd W_inv = W_diag.inverse();
-        // Convert to sparse matrix
-        //Eigen::SparseMatrix<double> W_inv_sparse = W_diag.sparseView();
 
         // Step 5: Update beta using weighted least squares
-        cout<<"pass1"<<endl;
-	XtW = X.transpose() * W_diag;
-	cout<<XtW.cols()<<"\t"<<XtW.rows()<<endl;
+	    XtW = X.transpose() * W_diag;
+	    cout<<XtW.cols()<<"\t"<<XtW.rows()<<endl;
         XtWX = XtW * X;
         XtWX_sparse = XtWX.sparseView();
         XtWy = XtW * z;
-        pre_beta = beta[0];
-        cout<<"pass2"<<endl;
-	cout<<XtWy.head(2)<<endl;
-        Eigen::VectorXd x(X.rows());
-	cout<<"pass3"<<endl;
+        pre_beta = beta;  // Store the full beta vector before updating
+        cout<<XtWy.head(2)<<endl;
     // Set up the Conjugate Gradient solver with a diagonal preconditioner
         Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> cg;
     // Compute the decomposition of A
@@ -510,13 +500,14 @@ Eigen::VectorXd QTL_mapping::IRLS(const Eigen::MatrixXd& X, const Eigen::VectorX
     
         beta = cg.solve(XtWy);  // Solve for new beta
         cout<<"beta\t"<<beta.head(2).transpose()<<endl;
-        // Step 6: Check for convergence
-        if (abs(beta[0]-pre_beta) < tol) {
+        // Step 6: Check for convergence across the full beta vector
+        double delta = (beta - pre_beta).norm() / (pre_beta.norm() + 1e-10);
+        if (delta < tol) {
             break;  // Convergence reached
         }
         //beta = Eigen::VectorXd::Zero(p); // if not converged
     }
-    if(isnan(beta[0])){beta = Eigen::VectorXd::Zero(p);}
+    if(beta.array().isNaN().any()){beta = Eigen::VectorXd::Zero(p);}
     return beta;
 }
 
@@ -530,58 +521,77 @@ int model(int argc, char *argv[]) {
 
 
 int QTL_parse_options(int argc, char *argv[]) {
-    optind = 1; //Reset before parsing again.
+
+    optind = 1; // Reset before parsing again.
+
     int c;
-    stringstream help_ss;
-    string vcf_, chr_, output_file_,site_list_,common_sample_file,path_,windowsize,output_path_, threshold_, X_;
-    while((c = getopt(argc, argv, "hs:o:c:v:x:p:w:m:t:")) != -1) {
-        switch(c) {
+
+    string vcf_, chr_, output_file_, site_list_,
+           common_sample_file, path_, windowsize,
+           output_path_, threshold_, X_;
+
+    while ((c = getopt(argc, argv, "hs:o:c:v:x:p:w:m:t:")) != -1) {
+
+        switch (c) {
+
             case 'h':
                 cout << "Usage: program [options]\n"
-                << "Options:\n"
-                << "  -h          Show this help message and exit\n"
-                << "  -s <file>   Site list file\n"
-                << "  -o <path>   Output path\n"
-                << "  -c <chr>    Chromosome\n"
-                << "  -v <file>   VCF file\n"
-                << "  -x <file>   Covariate file (X)\n"
-                << "  -p <path>   Input data path\n"
-                << "  -w <int>    Window size\n"
-                << "  -m <file>   Common sample file\n"
-                << "  -t <float>  Threshold\n";
+                     << "Options:\n"
+                     << "  -h          Show this help message and exit\n"
+                     << "  -s <file>   Site list file\n"
+                     << "  -o <path>   Output path\n"
+                     << "  -c <chr>    Chromosome\n"
+                     << "  -v <file>   VCF file\n"
+                     << "  -x <file>   Covariate file (X)\n"
+                     << "  -p <path>   Input data path\n"
+                     << "  -w <int>    Window size\n"
+                     << "  -m <file>   Common sample file\n"
+                     << "  -t <float>  Threshold\n";
                 exit(0);
+
             case 's':
                 site_list_ = string(optarg);
                 break;
+
             case 'm':
                 common_sample_file = string(optarg);
                 break;
+
             case 'c':
                 chr_ = string(optarg);
                 break;
+
             case 'v':
                 vcf_ = string(optarg);
                 break;
+
             case 'x':
                 X_ = string(optarg);
                 break;
+
             case 'p':
                 path_ = string(optarg);
                 break;
+
             case 'w':
                 windowsize = string(optarg);
                 break;
+
             case 'o':
                 output_path_ = string(optarg);
                 break;
+
             case 't':
                 threshold_ = string(optarg);
                 break;
+
             case '?':
             default:
                 throw runtime_error("Error parsing inputs!(1)\n\n");
         }
     }
+
+
     cerr << "Site list: " << site_list_ << endl;
     cerr << "Path: " << path_ << endl;
     cerr << "Output path: " << output_path_ << endl;
@@ -590,102 +600,477 @@ int QTL_parse_options(int argc, char *argv[]) {
     cerr << "covariate: " << X_ << endl;
     cerr << endl;
 
-    //read in splice site
+
+    // ============================================================
+    // Read splice-site list
+    // ============================================================
+
     ifstream fin;
+
     fin.open(site_list_);
-    string line,chrom,tmp_line;
+
+    if (!fin.is_open()) {
+        cerr << "Error: cannot open site list file: "
+             << site_list_ << endl;
+        return 1;
+    }
+
+    string line, chrom, tmp_line;
     vector<string> sitelist;
-    while(getline(fin,line)){
-        chrom=line.substr(0,line.find(":"));
-        if(chrom==chr_){
+
+    while (getline(fin, line)) {
+
+        if (line.empty()) {
+            continue;
+        }
+
+        chrom = line.substr(0, line.find(":"));
+
+        if (chrom == chr_) {
             sitelist.push_back(line);
         }
     }
+
     fin.close();
-    cout<<"site list read in"<<endl;
-    //read in common_sample
+
+    cout << "site list read in: "
+         << sitelist.size()
+         << " sites" << endl;
+
+
+    // ============================================================
+    // Read common samples
+    // ============================================================
+
     fin.open(common_sample_file);
-    vector<string> common_sample;
-    while(getline(fin,line)){
-        common_sample.push_back(line);
+
+    if (!fin.is_open()) {
+        cerr << "Error: cannot open common sample file: "
+             << common_sample_file << endl;
+        return 1;
     }
+
+    vector<string> common_sample;
+
+    while (getline(fin, line)) {
+
+        if (!line.empty()) {
+            common_sample.push_back(line);
+        }
+    }
+
     fin.close();
-    cout<<"sample read in"<<endl;
-    //
-    string tmp_1,tmp_2;
+
+    if (common_sample.empty()) {
+        cerr << "Error: common sample file is empty." << endl;
+        return 1;
+    }
+
+    cout << "sample read in: "
+         << common_sample.size()
+         << " samples" << endl;
+
+
+    // ============================================================
+    // Read covariates
+    // ============================================================
+
+    string tmp_1, tmp_2;
+
     QTL_mapping it;
     it.set_PC(X_);
-    //set PC name
-    vector<Eigen::VectorXd> test_PC=it.read_in_PC();
+
+    vector<Eigen::VectorXd> test_PC = it.read_in_PC();
+
+    if (test_PC.empty()) {
+        cerr << "Error: no covariates were read from: "
+             << X_ << endl;
+        return 1;
+    }
+
     int row = test_PC[0].size();
     int col = test_PC.size();
-    cout<<row<<"\t"<<col<<endl;
-    Eigen::MatrixXd PCXd(row,col);
 
-    for(int i = 0;i<col;i++){
+    cout << row << "\t" << col << endl;
+
+    Eigen::MatrixXd PCXd(row, col);
+
+    for (int i = 0; i < col; i++) {
+
+        if (test_PC[i].size() != row) {
+            cerr << "Error: inconsistent covariate vector length."
+                 << endl;
+            return 1;
+        }
+
         PCXd.col(i) = test_PC[i];
     }
-    Eigen::MatrixXd X_cons = it.addConstant(PCXd); 
+
+    Eigen::MatrixXd X_cons = it.addConstant(PCXd);
+
+
     string tmp_val;
     double val;
-    for(int s=0;s<sitelist.size();s++){
+
+
+    // ============================================================
+    // Iterate over sites
+    // ============================================================
+
+    for (int s = 0; s < static_cast<int>(sitelist.size()); s++) {
+
+        // --------------------------------------------------------
+        // Read middle file
+        // --------------------------------------------------------
+
+        string middle_file =
+            path_ + "/" + sitelist[s] + ".middle";
+
         ifstream fin1;
-        fin1.open(path_+"/"+sitelist[s]+".middle");
-        cout<<sitelist[s]<<endl;
-        int line_num=0;
-        string site_name, dispersion_string;
-        double dispersion;
-        vector<Eigen::VectorXd> vectors_val_PC;
-        bool if_nan=false;
+        fin1.open(middle_file);
+
+
+        // File does not exist / cannot be opened
+        if (!fin1.is_open()) {
+
+            cerr << "Warning: cannot open middle file: "
+                 << middle_file
+                 << ". Skipping this site."
+                 << endl;
+
+            continue;
+        }
+
+
+        // File exists but is empty
+        if (fin1.peek() == ifstream::traits_type::eof()) {
+
+            cerr << "Warning: middle file is empty: "
+                 << middle_file
+                 << ". Skipping this site."
+                 << endl;
+
+            fin1.close();
+
+            continue;
+        }
+
+
+        cout << sitelist[s] << endl;
+
+
+        int line_num = 0;
+
+        string site_name;
+        string dispersion_string;
         string dispersion_post;
-        while(getline(fin1,line)){
-            if(line_num==0){
-                cout<<line<<endl;
-                tmp_1 = line.substr(line.find("\t")+1);
-                site_name=tmp_1.substr(0,tmp_1.find("\t"));
-                cout<<site_name<<endl;
-                cout<<tmp_1<<endl;
-                dispersion_post=tmp_1.substr(tmp_1.find("\t")+1);
-                dispersion_string=dispersion_post.substr(0,dispersion_post.find("\t"));
-                if(dispersion_string=="nan"){
-                    if_nan=true;
+
+        double dispersion = 0.0;
+
+        vector<Eigen::VectorXd> vectors_val_PC;
+
+        bool if_nan = false;
+
+
+        // --------------------------------------------------------
+        // Parse middle file
+        // --------------------------------------------------------
+
+        while (getline(fin1, line)) {
+
+            if (line_num == 0) {
+
+                cout << line << endl;
+
+                // Header must contain tab
+                if (line.find("\t") == string::npos) {
+
+                    cerr << "Warning: malformed first line in "
+                         << middle_file
+                         << ". Skipping this site."
+                         << endl;
+
+                    if_nan = true;
                     break;
                 }
-                dispersion=stod(dispersion_string);
-                cout<<dispersion<<"\t"<<dispersion_string<<endl;
+
+
+                tmp_1 =
+                    line.substr(line.find("\t") + 1);
+
+                site_name =
+                    tmp_1.substr(0, tmp_1.find("\t"));
+
+
+                cout << site_name << endl;
+                cout << tmp_1 << endl;
+
+
+                if (tmp_1.find("\t") == string::npos) {
+
+                    cerr << "Warning: dispersion field missing in "
+                         << middle_file
+                         << ". Skipping this site."
+                         << endl;
+
+                    if_nan = true;
+                    break;
+                }
+
+
+                dispersion_post =
+                    tmp_1.substr(tmp_1.find("\t") + 1);
+
+                dispersion_string =
+                    dispersion_post.substr(
+                        0,
+                        dispersion_post.find("\t")
+                    );
+
+
+                if (dispersion_string == "nan"  ||
+                    dispersion_string == "-nan" ||
+                    dispersion_string == "inf"  ||
+                    dispersion_string == "-inf") {
+
+                    if_nan = true;
+                    break;
+                }
+
+
+                try {
+                    dispersion = stod(dispersion_string);
+                }
+                catch (...) {
+
+                    cerr << "Warning: invalid dispersion value: "
+                         << dispersion_string
+                         << " in "
+                         << middle_file
+                         << ". Skipping this site."
+                         << endl;
+
+                    if_nan = true;
+                    break;
+                }
+
+
+                cout << dispersion << "\t"
+                     << dispersion_string << endl;
             }
-            else{
+
+            else {
+
                 Eigen::VectorXd val_PC(0);
-                tmp_line=line.substr(line.find('\t')+1);
-                line=tmp_line;
-                while(line.find('\t')<100000000){
-                tmp_val=line.substr(0,line.find('\t'));
-                val = stod(tmp_val);
-                val_PC.conservativeResize(val_PC.size() + 1);
-                val_PC(val_PC.size()-1) = val;
-                tmp_line=line.substr(line.find('\t')+1);
-                line=tmp_line;
+
+                if (line.find('\t') == string::npos) {
+                    line_num++;
+                    continue;
+                }
+
+                tmp_line =
+                    line.substr(line.find('\t') + 1);
+
+                line = tmp_line;
+
+
+                while (line.find('\t') != string::npos) {
+
+                    tmp_val =
+                        line.substr(0, line.find('\t'));
+
+                    val = stod(tmp_val);
+
+                    val_PC.conservativeResize(
+                        val_PC.size() + 1
+                    );
+
+                    val_PC(val_PC.size() - 1) = val;
+
+                    tmp_line =
+                        line.substr(line.find('\t') + 1);
+
+                    line = tmp_line;
+                }
+
+
+                vectors_val_PC.push_back(val_PC);
             }
-            vectors_val_PC.push_back(val_PC);
-            }
+
+
             line_num++;
         }
+
+
         fin1.close();
-        if(if_nan==true)continue;
-        cout<<"Finish read in middle file"<<endl;
-        //random initialize eta,beta_hat,u_hat,mat;
-        Eigen::VectorXd eta, beta_hat, u_hat = Eigen::VectorXd::Zero(2);
-        Eigen::SparseMatrix<double> result(2,2);
-        Eigen::MatrixXd mat(3,3); //X_cons(3,3)
-        REMLOptimizer tmp(eta, X_cons, beta_hat, u_hat, vectors_val_PC[3], vectors_val_PC[2], result, 10, 1e-3,mat,0);
-        string chrom=site_name.substr(0,site_name.find(":"));
-        tmp_1 = site_name.substr(site_name.find(":")+1);
-        string pos=tmp_1.substr(tmp_1.find(":")+1);
-        vector<pair<string, int>> positions = {{chrom, stoi(pos)}};
-        tmp.read_in_genotype(vcf_, positions, stoi(windowsize), common_sample);
-        string output_file=output_path_+"/"+site_name+".result";
-        tmp.pvalue_beta_sd_compute(output_file, site_name, dispersion,stod(threshold_),vectors_val_PC[0],vectors_val_PC[1],vectors_val_PC[2],vectors_val_PC[3]);  
+
+
+        // Invalid dispersion/header
+        if (if_nan) {
+            continue;
+        }
+
+
+        // --------------------------------------------------------
+        // IMPORTANT: prevent vectors_val_PC[0-3] out-of-range
+        // --------------------------------------------------------
+
+        if (vectors_val_PC.size() < 4) {
+
+            cerr << "Warning: incomplete middle file: "
+                 << middle_file
+                 << ". Expected at least 4 data vectors but found "
+                 << vectors_val_PC.size()
+                 << ". Skipping this site."
+                 << endl;
+
+            continue;
+        }
+
+
+        cout << "Finish read in middle file" << endl;
+
+
+        // ========================================================
+        // Initialize REML optimizer
+        // ========================================================
+
+        Eigen::VectorXd eta;
+        Eigen::VectorXd beta_hat;
+        Eigen::VectorXd u_hat =
+            Eigen::VectorXd::Zero(2);
+
+        Eigen::SparseMatrix<double> result(2, 2);
+
+        Eigen::MatrixXd mat(3, 3);
+
+
+        REMLOptimizer tmp(
+            eta,
+            X_cons,
+            beta_hat,
+            u_hat,
+            vectors_val_PC[3],
+            vectors_val_PC[2],
+            result,
+            30,
+            0.001,
+            mat,
+            0
+        );
+
+
+        // ========================================================
+        // Parse chromosome / position
+        // ========================================================
+
+        size_t first_colon =
+            site_name.find(":");
+
+        if (first_colon == string::npos) {
+
+            cerr << "Warning: malformed site name: "
+                 << site_name
+                 << ". Skipping."
+                 << endl;
+
+            continue;
+        }
+
+
+        chrom =
+            site_name.substr(0, first_colon);
+
+        tmp_1 =
+            site_name.substr(first_colon + 1);
+
+
+        size_t second_colon =
+            tmp_1.find(":");
+
+        if (second_colon == string::npos) {
+
+            cerr << "Warning: malformed site name: "
+                 << site_name
+                 << ". Skipping."
+                 << endl;
+
+            continue;
+        }
+
+
+        string pos =
+            tmp_1.substr(second_colon + 1);
+
+
+        int site_pos;
+
+        try {
+            site_pos = stoi(pos);
+        }
+        catch (...) {
+
+            cerr << "Warning: invalid site position in "
+                 << site_name
+                 << ". Skipping."
+                 << endl;
+
+            continue;
+        }
+
+
+        vector<pair<string, int>> positions = {
+            {chrom, site_pos}
+        };
+
+
+        // ========================================================
+        // Read genotype
+        // ========================================================
+
+        bool genotype_found =
+            tmp.read_in_genotype(
+                vcf_,
+                positions,
+                stoi(windowsize),
+                common_sample
+            );
+
+
+        // No variants in the cis-window
+        if (!genotype_found) {
+
+            cerr << "Warning: no genotype available for "
+                 << site_name
+                 << ". Skipping this site."
+                 << endl;
+
+            continue;
+        }
+
+
+        // ========================================================
+        // Association test
+        // ========================================================
+
+        string output_file =
+            output_path_ + "/" +
+            site_name + ".result";
+
+
+        tmp.pvalue_beta_sd_compute(
+            output_file,
+            site_name,
+            dispersion,
+            stod(threshold_),
+            vectors_val_PC[0],
+            vectors_val_PC[1],
+            vectors_val_PC[2],
+            vectors_val_PC[3]
+        );
     }
+
+
     return 0;
 }
 
@@ -799,7 +1184,7 @@ int DS_parse_options(int argc, char *argv[]) {
                 cout<<tmp_1<<endl;
                 dispersion_post=tmp_1.substr(tmp_1.find("\t")+1);
                 dispersion_string=dispersion_post.substr(0,dispersion_post.find("\t"));
-                if(dispersion_string=="nan"){
+                if((dispersion_string=="nan")||(dispersion_string=="-nan")||(dispersion_string=="inf")||(dispersion_string=="-inf")){
                     if_nan=true;
                     break;
                 }
@@ -810,7 +1195,7 @@ int DS_parse_options(int argc, char *argv[]) {
                 Eigen::VectorXd val_PC(0);
                 tmp_line=line.substr(line.find('\t')+1);
                 line=tmp_line;
-                while(line.find('\t')<100000000){
+                while(line.find('\t')!= std::string::npos){
                 tmp_val=line.substr(0,line.find('\t'));
                 val = stod(tmp_val);
                 val_PC.conservativeResize(val_PC.size() + 1);
@@ -900,10 +1285,9 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
     //read in splice site
     ifstream fin;
     fin.open(site_list_);
-    string line,chrom,tmp_line;
+    string line,tmp_line;
     vector<string> sitelist;
     while(getline(fin,line)){
-        chrom=line.substr(0,line.find(":"));
         sitelist.push_back(line);
     }
     fin.close();
@@ -960,7 +1344,7 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
                 cout<<tmp_1<<endl;
                 dispersion_post=tmp_1.substr(tmp_1.find("\t")+1);
                 dispersion_string=dispersion_post.substr(0,dispersion_post.find("\t"));
-                if(dispersion_string=="nan"){
+                if((dispersion_string=="nan")||(dispersion_string=="-nan")||(dispersion_string=="inf")||(dispersion_string=="-inf")){
                     if_nan=true;
                     break;
                 }
@@ -971,7 +1355,7 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
                 Eigen::VectorXd val_PC(0);
                 tmp_line=line.substr(line.find('\t')+1);
                 line=tmp_line;
-                while(line.find('\t')<100000000){
+                while(line.find('\t')!= std::string::npos){
                 tmp_val=line.substr(0,line.find('\t'));
                 val = stod(tmp_val);
                 val_PC.conservativeResize(val_PC.size() + 1);
@@ -991,10 +1375,6 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
         Eigen::SparseMatrix<double> result(2,2);
         Eigen::MatrixXd mat(3,3); //X_cons(3,3)
         REMLOptimizer tmp(eta, X_cons, beta_hat, u_hat, vectors_val_PC[3], vectors_val_PC[2], result, 10, 1e-3,mat,0);
-        string chrom=site_name.substr(0,site_name.find(":"));
-        tmp_1 = site_name.substr(site_name.find(":")+1);
-        string pos=tmp_1.substr(tmp_1.find(":")+1);
-        vector<pair<string, int>> positions = {{chrom, stoi(pos)}};
         tmp.read_in_genotype_trans(vcf_, variant_id_, common_sample,chr_);
         string output_file=output_path_+"/"+site_name+".result";
         tmp.pvalue_beta_sd_compute(output_file, site_name, dispersion,stod(threshold_),vectors_val_PC[0],vectors_val_PC[1],vectors_val_PC[2],vectors_val_PC[3]);  

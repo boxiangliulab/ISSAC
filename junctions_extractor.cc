@@ -154,12 +154,6 @@ int JunctionsExtractor::add_junction(Junction j1) {
     }
 
     //Construct key chr:start-end:strand
-    stringstream s1;
-    string start, end;
-    string CB,UB;
-    s1 << j1.start; start = s1.str();
-    s1 << j1.CB; CB = s1.str();
-    s1 << j1.UB; UB = s1.str();
     //since ?,+,- sort differently on different systems
     string strand_proxy;
     if(j1.strand == "+") {
@@ -169,7 +163,7 @@ int JunctionsExtractor::add_junction(Junction j1) {
     } else {
         strand_proxy = "2";
     }
-    string key = j1.chrom + string(":") + start + "-" + end + ":" + strand_proxy + ":" + CB + ":" + UB;  
+    string key =j1.chrom + ":" +to_string(j1.start) + "-" +to_string(j1.end) + ":" +strand_proxy + ":" +j1.CB + ":" +j1.UB;
 
     //Check if new junction
     if(!junctions_.count(key)) {

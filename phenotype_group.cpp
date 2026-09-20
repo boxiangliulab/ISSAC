@@ -83,7 +83,7 @@ map<string,vector<string>> cluster(set<string> intron_set){
             bool if_find = false;
             for(const auto& [key,valueSet] : cluster_site[tmp3]){
                 for(const auto&value : valueSet){
-                    if((value>=donor)&&(value<=acceptor)){
+                    if((stoi(value)>=stoi(donor))&&(stoi(value)<=stoi(acceptor))){
                         cluster_site[tmp3][key].insert(donor);
                         cluster_site[tmp3][key].insert(acceptor);
                         string clu_name = tmp3 + ":" + to_string(key);
@@ -111,6 +111,8 @@ map<string,vector<string>> cluster(set<string> intron_set){
             tmp_set[1].insert(donor);
             tmp_set[1].insert(acceptor);
             cluster_site[tmp3] = tmp_set;
+            string clu_name = tmp3 + ":1";
+            cluster_intron[clu_name].push_back(elem);
         }
 
     }

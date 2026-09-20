@@ -83,6 +83,7 @@ class USRExtractor {
         vector<string> barcodelist;
         map<string,vector<int>> sitelist;
         map<string,int> start_pos;
+        unordered_set<string> barcodeset;
     public:
         //Default constructor
         USRExtractor() {
@@ -93,7 +94,7 @@ class USRExtractor {
             region_ = ".";
         }
         USRExtractor(string bam1, int strandness1, string strand_tag1, string region1) : 
-            bam_(bam1), strandness_(strandness1), strand_tag_(strand_tag1){
+            bam_(bam1), strandness_(strandness1), region_(region1),strand_tag_(strand_tag1){
             output_file_ = "NA";
         }
         //Name the junction based on the number of junctions
@@ -106,15 +107,15 @@ class USRExtractor {
         //Identify exon-exon junctions
         int identify_USR_from_BAM();
         //Print all the junctions
-        void print_all_USR(ostream& out = cout);  
+        void print_all_USR();  
         //Get the BAM filename
         string get_bam();
         //Parse the alignment into the junctions map
         int parse_alignment_into_unspliced_read(bam_hdr_t *header, bam1_t *aln);
         //Add a junction to the junctions map
-        int add_USR(USR j1);  
+        int add_USR(const USR& j1);  
         //Get the strand from bitwise flag
-        void set_site(USR& j1);
+        void set_site(USR& j1, int alignment_end);
         //set the interested site for each read count
         void set_USR_strand_flag(bam1_t *aln, USR& j1);
 };

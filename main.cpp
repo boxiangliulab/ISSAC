@@ -88,9 +88,6 @@ int main(int argc, char* argv[]) {
         else if(subcmd == "pheno_output"){
             return pheno_output(argc - 1, argv+1);
         }
-        else if(subcmd == "rare_variant"){
-            return rare_mapping(argc - 1, argv+1);
-        }
     }
     return usage();
 }

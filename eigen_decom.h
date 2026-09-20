@@ -49,6 +49,10 @@ class QTL_mapping {
         // deposite chr
         string chr_;
         string GRM_num_;
+        double GRM_val_;
+        // iteration times for estimation fixed effect and random effect
+        int iter_time_;
+        double iter_thre_;
         // iterate times for normalization parameter estimation
         int time_;
         int windowsize;
@@ -118,378 +122,562 @@ public:
 
     REMLOptimizer(Eigen::VectorXd& eta, const Eigen::MatrixXd& X, 
                   Eigen::VectorXd& beta_hat,Eigen::VectorXd& u_hat_, Eigen::VectorXd& y_, 
-                  Eigen::VectorXd& total_, Eigen::SparseMatrix<double> K, const int max_iteration,
-                  const double tol, Eigen::MatrixXd& sigma_inv_X, double tau_) 
-        : eta(eta), X(X), beta_hat(beta_hat), u_hat_(u_hat_),y_(y_),total_(total_), K(K), max_iteration(max_iteration), tol(tol), sigma_inv_X(sigma_inv_X), tau_(tau_) {}
+                  Eigen::VectorXd& total_, Eigen::SparseMatrix<double> K, const int max_iteration_,
+                  const double tol_, Eigen::MatrixXd& sigma_inv_X, double tau_) 
+        : eta(eta), X(X), beta_hat(beta_hat), u_hat_(u_hat_),y_(y_),total_(total_), K(K), max_iteration_(max_iteration_), tol_(tol_), sigma_inv_X(sigma_inv_X), tau_(tau_) {}
 
-    static double reml_criterion(const vector<double> &theta, vector<double> &grad, void *data){
-        auto *args = static_cast<std::tuple<Eigen::VectorXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::SparseMatrix<double>, Eigen::SparseMatrix<double>> *>(data);
-        Eigen::VectorXd eta = get<0>(*args);
-        Eigen::MatrixXd X = get<1>(*args);
-        Eigen::VectorXd beta_hat = get<2>(*args);
-        Eigen::SparseMatrix<double> W_inv = get<3>(*args);
-        Eigen::SparseMatrix<double> K = get<4>(*args);
-        
-        double tau2 = std::exp(theta[0]);
-        int max_iteration=100;
-        double tol=1e-3;
-        Eigen::SparseMatrix<double> result = W_inv + tau2 * K;
-        Eigen::MatrixXd V_inv_X = Eigen::MatrixXd::Zero(X.rows(),X.cols());
-        for(int i=0;i<X.cols();i++){
-            Eigen::VectorXd b_i = X.col(i);
-            Eigen::VectorXd x(X.rows());
-    // Set up the Conjugate Gradient solver with a diagonal preconditioner
-            Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> cg;
-    // Compute the decomposition of A
-            cg.compute(result);
-            cg.setMaxIterations(max_iteration);
-            cg.setTolerance(tol);
-    // Solve the system A * x = b using PCG
-    
-            x = cg.solve(b_i);
-            //Eigen::VectorXd x = compute_V_inv_X(result, b_i, X.rows(), max_iteration, tol);
-            V_inv_X.col(i) = x;
-        }
-        //sigma_inv_X = V_inv_X;
-        Eigen::SparseMatrix<double> X_t_V_inv_X = (X.transpose() * V_inv_X).sparseView();
-        Eigen::VectorXd residual = eta - X * beta_hat;
-        Eigen::VectorXd x(result.rows());
-    // Set up the Conjugate Gradient solver with a diagonal preconditioner
-        Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> cg;
-    // Compute the decomposition of A
-        cg.compute(result);
-        cg.setMaxIterations(max_iteration);
-        cg.setTolerance(tol);
-    // Solve the system A * x = b using PCG
-    
-        Eigen::VectorXd V_inv_residual = cg.solve(residual);
-        //Eigen::VectorXd V_inv_residual = compute_V_inv_X(result, residual , result.rows(), max_iteration, tol);
-        Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-        solver.analyzePattern(result);  // Analyze the sparsity pattern
-        solver.factorize(result);       // Factorize the matrix
+static double reml_criterion(const vector<double> &theta, vector<double> &grad, void *data){
+    auto *args = static_cast<std::tuple<Eigen::VectorXd, Eigen::MatrixXd, Eigen::VectorXd,
+                                         Eigen::SparseMatrix<double>, Eigen::SparseMatrix<double>,
+                                         Eigen::SparseMatrix<double>> *>(data);
+    Eigen::VectorXd eta            = get<0>(*args);
+    Eigen::MatrixXd X              = get<1>(*args);
+    Eigen::VectorXd beta_hat       = get<2>(*args);
+    Eigen::SparseMatrix<double> W_inv = get<3>(*args);
+    Eigen::SparseMatrix<double> K     = get<4>(*args);
+    Eigen::SparseMatrix<double> I     = get<5>(*args);
 
-        if (solver.info() != Eigen::Success) {
-        std::cerr << "Decomposition failed!" << std::endl;
-        return -1.0;  // Handle decomposition failure
-        }
-        double log_det_V = solver.logAbsDeterminant();
-        //double log_det_V = logAbsDeterminant(result);
-        //double log_det_X_t_V_inv_X = logAbsDeterminant(X_t_V_inv_X);
-        //double log_det_X_t_V_inv_X = 0;
-        Eigen::SparseLU<Eigen::SparseMatrix<double>> solver_2;
-        solver_2.analyzePattern(X_t_V_inv_X);  // Analyze the sparsity pattern
-        solver_2.factorize(X_t_V_inv_X);       // Factorize the matrix
+    double tau_g = std::exp(theta[0]);
+    double tau_o = std::exp(theta[1]);
 
-        if (solver_2.info() != Eigen::Success) {
-        std::cerr << "Decomposition failed!" << std::endl;
-        return -1.0;  // Handle decomposition failure
-        }
-        double log_det_X_t_V_inv_X = solver_2.logAbsDeterminant();
+    Eigen::SparseMatrix<double> result = W_inv + tau_g * K + tau_o * I;
 
-        double reml_value = -0.5*(log_det_V + log_det_X_t_V_inv_X + residual.transpose()*V_inv_residual);
-        cout<<-reml_value<<endl;
-        return -reml_value;
+    // Factorize V once, reuse for all solves below
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    solver.analyzePattern(result);
+    solver.factorize(result);
+    if (solver.info() != Eigen::Success) {
+        std::cerr << "Decomposition of V failed at tau_g=" << tau_g
+                   << ", tau_o=" << tau_o << std::endl;
+        return std::numeric_limits<double>::max();
     }
+    double log_det_V = solver.logAbsDeterminant();
+
+    // Solve V^{-1} X column by column, reusing the same factorization
+    Eigen::MatrixXd V_inv_X = Eigen::MatrixXd::Zero(X.rows(), X.cols());
+    for (int i = 0; i < X.cols(); i++) {
+        V_inv_X.col(i) = solver.solve(X.col(i));
+    }
+
+    Eigen::SparseMatrix<double> X_t_V_inv_X = (X.transpose() * V_inv_X).sparseView();
+
+    Eigen::VectorXd residual = eta - X * beta_hat;
+    Eigen::VectorXd V_inv_residual = solver.solve(residual);
+
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver_2;
+    solver_2.analyzePattern(X_t_V_inv_X);
+    solver_2.factorize(X_t_V_inv_X);
+    if (solver_2.info() != Eigen::Success) {
+        std::cerr << "Decomposition of X'V^{-1}X failed at tau_g=" << tau_g
+                   << ", tau_o=" << tau_o << std::endl;
+        return std::numeric_limits<double>::max();
+    }
+    double log_det_X_t_V_inv_X = solver_2.logAbsDeterminant();
+
+    double reml_value = -0.5 * (log_det_V + log_det_X_t_V_inv_X
+                                 + residual.transpose() * V_inv_residual);
+    return -reml_value;
+}
 
     Eigen::VectorXd sigmoid(const Eigen::VectorXd & x){
         return 1.0/(1.0+(-x.array()).exp());
     }
 
-    void update(Eigen::VectorXd& y,Eigen::VectorXd& total){
-        
-        y_ = y;
-        total_ = total;
-        double para_init = 0;
-        double tau = para_init;
+void update(Eigen::VectorXd& y, Eigen::VectorXd& total){
+
+    y_ = y;
+    total_ = total;
+
+    double tau_g = 0;
+    double tau_o = 0;
+    convergence_status_ = false;
+    Eigen::VectorXd start_beta = beta_hat; 
     
-        //Eigen::VectorXd beta_hat; // Initialize beta_hat with appropriate values
-        Eigen::VectorXd pre_beta = beta_hat;
-        double pre_tau = 0;
-        double pre_phi = 0;
+    Eigen::VectorXd pre_beta = beta_hat;
+    double pre_tau_g = 0;
+    double pre_tau_o = 0;
 
-        //Eigen::MatrixXd newX;  // Initialize newX with your data
-    // Example: Eigen::MatrixXd newX = Eigen::MatrixXd::Constant(100, 2, 1.0);
+    // Fixed inner CG solver settings, used consistently for every V^{-1} * (.) solve below
+    const int    CG_MAX_ITERATION = 1000;
+    const double CG_TOL = 1e-6;
 
-    // Initialize other variables: total, u_hat, y, phi, K, etc.
-        Eigen::VectorXd u_hat = Eigen::VectorXd::Zero(y.size());
-        //Eigen::MatrixXd K;
+    int n = y.size();
+    Eigen::VectorXd u_hat_g = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd u_hat_o = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd u_hat   = Eigen::VectorXd::Zero(n); // u_hat_g + u_hat_o
 
-    // Initialize pi, mu, eta
-        Eigen::VectorXd pi = sigmoid(X * beta_hat + u_hat);
-        Eigen::VectorXd mu = pi.array() * total.array();
-        //Eigen::VectorXd eta = (X * beta_hat).array() + u_hat.array() + (y.array() - mu.array()) / (total.array() * pi.array() * (1.0 - pi.array()));
+    Eigen::VectorXd pi = sigmoid(X * beta_hat + u_hat);
+    Eigen::VectorXd mu = pi.array() * total.array();
 
-        double phi = 1.0;
+    Eigen::SparseMatrix<double> I_mat(n, n);
+    I_mat.setIdentity();
 
-        //int iter = 100;  // Set the number of iterations (as in the Python code)
-        //double tol = 1e-6; // Tolerance for convergence
-        cout<<"Start iteration"<<endl;
-        for (int i = 0; i < max_iteration; ++i) {
-        // Update pi, mu, eta
+    cout << "Start iteration" << endl;
+    Eigen::VectorXd W_vec,W_inv_vec;
+    Eigen::MatrixXd W_diag,W_inv_diag;
+    Eigen::SparseMatrix<double> W_inv_sparse;
+    for (int i = 0; i < max_iteration_; ++i) {
         pi = sigmoid(X * beta_hat + u_hat);
         mu = pi.array() * total.array();
-        eta = (X * beta_hat).array() + u_hat.array() + (y.array() - mu.array()) / (total.array() * pi.array() * (1.0 - pi.array()));
-        //cout<<eta[0]<<endl; //
-        // Compute W and W_inv (inverse of W)
-        Eigen::VectorXd W_vec = ((pi.array()*(1-pi.array())*phi)).matrix();
-        Eigen::MatrixXd W_diag = W_vec.asDiagonal();
+        eta = (X * beta_hat).array() + u_hat.array()
+              + (y.array() - mu.array()) / (total.array() * pi.array() * (1.0 - pi.array()));
+
+        W_vec = (total.array() * (pi.array()*(1-pi.array()))).matrix();
+        W_diag = W_vec.asDiagonal();
         W_ = W_diag.sparseView();
 
-        Eigen::VectorXd W_inv_vec = (1/(pi.array()*(1-pi.array())*phi)).matrix();
-        Eigen::MatrixXd W_inv_diag = W_inv_vec.asDiagonal();
-        Eigen::SparseMatrix<double> W_inv_sparse = W_inv_diag.sparseView();
+        W_inv_vec = (1/(total.array() * (pi.array()*(1-pi.array())))).matrix();
+        W_inv_diag = W_inv_vec.asDiagonal();
+        W_inv_sparse = W_inv_diag.sparseView();
 
-        // Initialize theta (equivalent to np.log([np.var(eta)]))
+        // initialize theta = [log(tau_g), log(tau_o)]
         double mean_eta = eta.mean();
-        double variance_eta = (eta.array()-mean_eta).square().mean();
+        double variance_eta = (eta.array() - mean_eta).square().mean();
         double log_var_eta = log(variance_eta);
-        cout<<"log_var_eta\t"<<log_var_eta<<endl;
-        if(std::isnan(log_var_eta)){
+        cout << "log_var_eta\t" << log_var_eta << endl;
+        if (std::isnan(log_var_eta)) {
             throw std::invalid_argument("Iteration failed");
         }
-        vector<double> theta(1,log_var_eta);
-        cout<<"eta"<<"\t"<<eta.head(10).transpose()<<endl;
-        cout<<"pi"<<"\t"<<pi.head(10).transpose()<<endl;
-        cout<<"y"<<"\t"<<y.head(10).transpose()<<endl;
-        cout<<"total"<<"\t"<<total.head(10).transpose()<<endl;
-        // Define the optimizer
-        //LBFGSpp::LBFGSParam<double> param;
-        //param.epsilon = tol;
-        //LBFGSpp::LBFGSSolver<double> solver(param);
-        //double fx;
-        cout<<"Defined successful"<<endl;
-        double tau_pre = 0;
-        double tau_post = log_var_eta;
-        //test using nlopt.hpp
-        auto args = std::make_tuple(eta,X, beta_hat,W_inv_sparse,K);
-        nlopt::opt opt(nlopt::LN_COBYLA,1);
-        std::vector<double> lb(1,-HUGE_VAL);  // Lower bounds for x
-        std::vector<double> ub(1,HUGE_VAL);
+
+        vector<double> theta(2, log_var_eta - log(2.0));
+
+        cout << "eta" << "\t" << eta.head(10).transpose() << endl;
+        cout << "pi" << "\t" << pi.head(10).transpose() << endl;
+        cout << "y" << "\t" << y.head(10).transpose() << endl;
+        cout << "total" << "\t" << total.head(10).transpose() << endl;
+        cout << "Defined successful" << endl;
+
+        auto args = std::make_tuple(eta, X, beta_hat, W_inv_sparse, K, I_mat);
+        nlopt::opt opt(nlopt::LN_BOBYQA, 2);
+        std::vector<double> lb(2, std::log(1e-6));
+        std::vector<double> ub(2, std::log(100));
         opt.set_lower_bounds(lb);
         opt.set_upper_bounds(ub);
-    // Set the objective function
         opt.set_min_objective(reml_criterion, &args);
+        opt.set_xtol_rel(1e-4);    
 
-    // Set tolerance and stopping criteria (optional)
-        opt.set_xtol_rel(1e-6);
-
-        double minf;  // Minimum value of the objective function
-
+        double minf;
+        bool opt_success = true;
         try {
-        // Run the optimization
-           nlopt::result result = opt.optimize(theta, minf);
-           //nlopt::result result = opt.optimize(theta);
-           std::cout << "Found minimum at f(x) = " << minf << std::endl;
-           std::cout << "Optimal parameters: " << theta[0]  << std::endl;
-         } catch (std::exception &e) {
-           std::cerr << "NLopt failed: " << e.what() << std::endl;
-         }
+            nlopt::result result = opt.optimize(theta, minf);
+            std::cout << "Found minimum at f(x) = " << minf << std::endl;
+            std::cout << "Optimal parameters: log_tau_g=" << theta[0] << std::endl;
+        } catch (std::exception &e) {
+            std::cerr << "NLopt failed at iteration " << i << ": " << e.what() << std::endl;
+            opt_success = false;
+        }
 
-        //auto rem_optimizer = [&](Eigen::VectorXd& theta, Eigen::VectorXd& grad) -> double {
-        //    return reml_criterion(theta, y, eta,X,beta_hat,W_inv_sparse,K); // Implement gradient computation if needed
-        //};
+        if (!opt_success) {
+            std::cerr << "Warning: variance component optimization failed at iteration " << i
+                       << "; treating as non-convergence." << std::endl;
+            convergence_status_ = false;
+            break;
+        }
 
-        //int niter = solver.minimize(rem_optimizer, theta, fx);*/
+        double tau_g_next = std::exp(theta[0]);
+        double tau_o_next = std::exp(theta[1]);
+
+        std::cout << "Iteration " << i << " : tau=" << tau_g_next << std::endl;
         
-        // Update tau
-        double tau_next = std::exp(theta[0]);
+        const double divergence_threshold = 95.0;
+        bool diverged = (tau_g_next >= divergence_threshold) || (tau_o_next >= divergence_threshold);
+        if (diverged) {
+        std::cerr << "Warning: variance component diverged at iteration " << i
+                   << " (tau_g=" << tau_g_next << ")" << std::endl;
+        convergence_status_ = false;
+        break;}
 
-        //deal with abnormal condition
+        pre_tau_g = tau_g;
+        pre_tau_o = tau_o;
+        tau_g = tau_g_next;
+        tau_o = tau_o_next;
 
-        std::cout << "Iteration " << i << " : " << tau_next << std::endl;
-        
-        // Convergence check
-        pre_tau = tau;
-        tau = tau_next;
+        sigma  = W_inv_sparse + tau_g * K + tau_o * I_mat;
 
-        // Update sigma and sigma_inv
-        Eigen::SparseMatrix<double> sigma = W_inv_sparse + tau * K;
-        //Eigen::MatrixXd sigma_inv = sigma.inverse();
-        // Update beta_hat
         pre_beta = beta_hat;
-        //Eigen::VectorXd sigma_inv_X = compute_V_inv_X(sigma, Eigen::VectorXd b, int n, int max_iteration, double tol);
-        int n = eta.size();
-        Eigen::VectorXd sigma_inv_eta = compute_V_inv_X(sigma, eta, n, max_iteration, tol);
-        //Compute sigma_inv_X
-        Eigen::MatrixXd sigma_inv_X = Eigen::MatrixXd::Zero(X.rows(),X.cols());
-        for(int X_col=0;X_col<X.cols();X_col++){
+        int n_ = eta.size();
+        Eigen::VectorXd sigma_inv_eta = compute_V_inv_X(sigma, eta, n_, CG_MAX_ITERATION, CG_TOL);
+
+        sigma_inv_X = Eigen::MatrixXd::Zero(X.rows(), X.cols());
+        for (int X_col = 0; X_col < X.cols(); X_col++) {
             Eigen::VectorXd b_i = X.col(X_col);
-            Eigen::VectorXd x = compute_V_inv_X(sigma, b_i, X.rows(), max_iteration, tol);
+            Eigen::VectorXd x = compute_V_inv_X(sigma, b_i, X.rows(), CG_MAX_ITERATION, CG_TOL);
             sigma_inv_X.col(X_col) = x;
         }
         Eigen::SparseMatrix<double> X_T_sigma_inv_X = (X.transpose() * sigma_inv_X).sparseView();
         Eigen::VectorXd X_T_sigma_inv_eta = X.transpose() * sigma_inv_eta;
-        beta_hat = compute_V_inv_X(X_T_sigma_inv_X, X_T_sigma_inv_eta, n, max_iteration, tol) ;
+        beta_hat = compute_V_inv_X(X_T_sigma_inv_X, X_T_sigma_inv_eta, n_, CG_MAX_ITERATION, CG_TOL);
         std::cout << "beta_hat: " << beta_hat.transpose() << std::endl;
 
-        // Update u_hat
         Eigen::VectorXd residual = eta - X * beta_hat;
-        Eigen::VectorXd sigma_inv_residual = compute_V_inv_X(sigma, (eta - X*beta_hat), n, max_iteration, tol);
-        u_hat = tau * K * sigma_inv_residual;
-        cout<<"u_hat: "<<u_hat.head(10).transpose()<<endl;
-        // Convergence criteria
-        cout<<pre_tau<<"\t"<<tau<<endl;
+        Eigen::VectorXd sigma_inv_residual = compute_V_inv_X(sigma, residual, n_, CG_MAX_ITERATION, CG_TOL);
+        u_hat_g = tau_g * (K * sigma_inv_residual);
+        u_hat_o = tau_o * sigma_inv_residual; // I * sigma_inv_residual = sigma_inv_residual
+        u_hat = u_hat_g + u_hat_o;
 
-        if ((std::abs(pre_tau - tau) < 1e-3)||(tau_next>10)) {
+        cout << "u_hat: " << u_hat.head(10).transpose() << endl;
+        //cout << "u_hat_o: " << u_hat_o.head(10).transpose() << endl;
+        //cout << pre_tau_g << "\t" << tau_g << "\t" << pre_tau_o << "\t" << tau_o << endl;
+
+        double beta_delta = (beta_hat - pre_beta).norm() / (pre_beta.norm() + 1e-10);
+        bool tau_converged = (std::abs(pre_tau_g - tau_g) < tol_) && (std::abs(pre_tau_o - tau_o) < tol_);
+        bool beta_converged = beta_delta < tol_;
+
+        if (tau_converged && beta_converged) {
             std::cout << "Converged\n";
-            std::cout << "Final tau: " << tau << std::endl;
-            tau_ = tau;
+            std::cout << "Final tau_g: " << tau_g << std::endl;
+            convergence_status_=true;
+            tau_   = tau_g;   
+            tau_o_ = tau_o;  
             pi = sigmoid(X * beta_hat + u_hat);
             mu = pi.array() * total.array();
-            eta = (X * beta_hat).array() + u_hat.array() + (y.array() - mu.array()) / (total.array() * pi.array() * (1.0 - pi.array()));
+            eta = (X * beta_hat).array() + u_hat.array()
+                  + (y.array() - mu.array()) / (total.array() * pi.array() * (1.0 - pi.array()));
             u_hat_ = u_hat;
-            cout<<"pi: "<<pi.head(10).transpose()<<endl;
-            cout<<"mu: "<<mu.head(10).transpose()<<endl;
-            cout<<"eta: "<<eta.head(10).transpose()<<endl;
+            W_vec = (total.array() * (pi.array()*(1-pi.array()))).matrix();
+            W_diag = W_vec.asDiagonal();
+            W_ = W_diag.sparseView();
+            cout << "pi: " << pi.head(10).transpose() << endl;
+            cout << "mu: " << mu.head(10).transpose() << endl;
+            cout << "eta: " << eta.head(10).transpose() << endl;
             break;
-             // Return the result
         }
-        pre_tau = tau;
-        pre_phi = phi;
     }
 
-    //std::cout << "Not converged!" << std::endl;
+    //only binomial fixed model
+    if(convergence_status_==false){
+        u_hat   = Eigen::VectorXd::Zero(n);
+        tau_ = 0.0;     
+        tau_o_ = 0.0;
+        beta_hat=start_beta;
+        pi = sigmoid(X * beta_hat + u_hat);
+        mu = pi.array() * total.array();
+        eta = (X * beta_hat).array() + u_hat.array()
+              + (y.array() - mu.array()) / (total.array() * pi.array() * (1.0 - pi.array()));
+        u_hat_ = u_hat;
+        W_vec = (total.array() * (pi.array()*(1-pi.array()))).matrix();
+        W_diag = W_vec.asDiagonal();
+        W_ = W_diag.sparseView();
+        cout << "pi: " << pi.head(10).transpose() << endl;
+        cout << "mu: " << mu.head(10).transpose() << endl;
+        cout << "eta: " << eta.head(10).transpose() << endl;
     }
+}
 
     // facilitate computation
     Eigen::VectorXd compute_V_inv_X(Eigen::SparseMatrix<double> result, Eigen::VectorXd b, int n, int max_iteration, double tol);
     
     double logAbsDeterminant(const Eigen::SparseMatrix<double>& V);
 
-    void read_in_genotype(const std::string vcf_file, const std::vector<std::pair<std::string, int>> &positions, 
-                      int windowsize, const std::vector<std::string> common_sample) {
+  bool read_in_genotype(
+    const std::string vcf_file,
+    const std::vector<std::pair<std::string, int>> &positions,
+    int windowsize,
+    const std::vector<std::string> common_sample
+) {
     std::cout << "Start reading in Genotype!" << std::endl;
-    //vector<vector<int>> g;
-    //vector<string> chr_pos;
-    // Open VCF file
+
+    // ============================================================
+    // 1. Open VCF file
+    // ============================================================
     htsFile *vcf = bcf_open(vcf_file.c_str(), "r");
+
     if (!vcf) {
-        std::cerr << "Error opening VCF file." << std::endl;
-        return;
+        std::cerr << "Error: cannot open VCF file: "
+                  << vcf_file << std::endl;
+        return false;
     }
 
-    // Initialize VCF reader
+
+    // ============================================================
+    // 2. Read VCF header
+    // ============================================================
     bcf_hdr_t *hdr = bcf_hdr_read(vcf);
+
     if (!hdr) {
-        std::cerr << "Error reading VCF header." << std::endl;
+        std::cerr << "Error: cannot read VCF header." << std::endl;
         bcf_close(vcf);
-        return;
+        return false;
     }
 
-    // Load the VCF index (you need to have the index file available, e.g., .csi or .tbi)
+
+    // ============================================================
+    // 3. Load VCF index
+    // ============================================================
     hts_idx_t *idx = bcf_index_load(vcf_file.c_str());
+
     if (!idx) {
-        std::cerr << "Error loading VCF index." << std::endl;
+        std::cerr << "Error: cannot load VCF index for: "
+                  << vcf_file << std::endl;
+
         bcf_hdr_destroy(hdr);
         bcf_close(vcf);
-        return;
+
+        return false;
     }
 
-    // Prepare to read records
+
+    // ============================================================
+    // 4. Initialize VCF record
+    // ============================================================
     bcf1_t *record = bcf_init();
+
     if (!record) {
-        std::cerr << "Error initializing VCF record." << std::endl;
+        std::cerr << "Error: cannot initialize VCF record."
+                  << std::endl;
+
+        hts_idx_destroy(idx);
         bcf_hdr_destroy(hdr);
         bcf_close(vcf);
-        return;
+
+        return false;
     }
 
-    // Create sample index map
+
+    // ============================================================
+    // 5. Create sample index map
+    // ============================================================
     std::unordered_map<std::string, int> sample_idx_map;
+
     for (int i = 0; i < bcf_hdr_nsamples(hdr); ++i) {
         sample_idx_map[hdr->samples[i]] = i;
     }
 
-    // Iterate over the positions
+
+    // ============================================================
+    // 6. Iterate over splice-site positions
+    // ============================================================
     for (const auto &pos_info : positions) {
-        string chrom = pos_info.first;
+
+        std::string chrom = pos_info.first;
         int pos = pos_info.second;
 
-        // Fetch records within the windowsize
-        int start = (pos - windowsize > 0) ? (pos - windowsize) : 0;
+        int start = (pos - windowsize > 0)
+                        ? (pos - windowsize)
+                        : 0;
+
         int end = pos + windowsize;
-        stringstream ss;
-        ss<<chrom<<":"<<start<<"-"<<end;
-        cout<<ss.str()<<endl;
-        hts_itr_t *itr = bcf_itr_querys(idx, hdr, ss.str().c_str());
+
+        std::stringstream ss;
+        ss << chrom << ":" << start << "-" << end;
+
+        std::cout << "Searching region: "
+                  << ss.str() << std::endl;
+
+
+        // --------------------------------------------------------
+        // Create iterator for this region
+        // --------------------------------------------------------
+        hts_itr_t *itr =
+            bcf_itr_querys(idx, hdr, ss.str().c_str());
+
         if (!itr) {
-            std::cerr << "Error creating iterator for " << chrom << ":" << start << "-" << end << std::endl;
-            cout<<"Error"<<endl;
-            return;
+            std::cerr
+                << "Warning: cannot create VCF iterator for "
+                << chrom << ":"
+                << start << "-"
+                << end
+                << ". Skipping this region."
+                << std::endl;
+
+            continue;
         }
 
-        cout<<"iterator created!"<<endl;
-        if(bcf_itr_next(vcf,itr,record)<0){
-            cout<<"No records here"<<endl;
-            bcf_destroy(record);
-            bcf_hdr_destroy(hdr);
-            bcf_close(vcf);
-            return;
-        }
+        bool found_any = false;
+
+        std::cout << "Iterator created!" << std::endl;
+
+
+        // ========================================================
+        // 7. Read variants in the window
+        // ========================================================
         while (bcf_itr_next(vcf, itr, record) >= 0) {
-            bcf_unpack(record, BCF_UN_ALL);  // Unpack record
-            int pos = record->pos + 1;
-            string ref=record->d.allele[0];
-            string alt=record->d.allele[1];
-            string snp = chrom + ":" + to_string(pos)+":"+ref+":"+alt;
-            chr_pos.push_back(snp);
-            // Add record ID to chr_pos
-            Eigen::VectorXd tmp_g = Eigen::VectorXd::Zero(common_sample.size());
 
-            // Iterate through common_sample and extract genotype dosage
-            for (int c=0;c<common_sample.size();c++) {
-                string sample = common_sample[c];
-                std::string sample_substr = sample.substr(0, sample.find(":")); // Extract sample substring
-                if (sample_idx_map.find(sample_substr) != sample_idx_map.end()) {
-                    int sample_index = sample_idx_map[sample_substr];
-                    int *gt_arr = nullptr, n_gts = 0;
+            bcf_unpack(record, BCF_UN_ALL);
 
-                    // Extract genotype information
-                    if (bcf_get_genotypes(hdr, record, &gt_arr, &n_gts) >= 0) {
-                        int dosage = 0;
-
-                        // Sum alleles to get dosage (ignoring missing values -1)
-                        for (int j = sample_index * 2; j < sample_index * 2 + 2 && j < n_gts; ++j) {
-                            if (gt_arr[j] != bcf_gt_missing) {
-                                dosage += bcf_gt_allele(gt_arr[j]);
-                            }
-                        }
-                        tmp_g[c] = dosage;
-                    }
-
-                    if (gt_arr) {
-                        free(gt_arr);  // Free memory for genotype array
-                    }
-                }
+            // Need at least REF and ALT
+            if (record->n_allele < 2) {
+                std::cerr
+                    << "Warning: record with fewer than 2 alleles "
+                    << "encountered. Skipping."
+                    << std::endl;
+                continue;
             }
 
-            // Append the dosage vector to g
+            int record_pos = record->pos + 1;
+
+            std::string ref = record->d.allele[0];
+            std::string alt = record->d.allele[1];
+
+            std::string snp =
+                chrom + ":" +
+                std::to_string(record_pos) + ":" +
+                ref + ":" +
+                alt;
+
+
+            // ----------------------------------------------------
+            // Extract genotype data
+            // ----------------------------------------------------
+            int *gt_arr = nullptr;
+            int n_gts = 0;
+
+            int gt_call_result =
+                bcf_get_genotypes(
+                    hdr,
+                    record,
+                    &gt_arr,
+                    &n_gts
+                );
+
+
+            // If genotype cannot be extracted, skip this variant
+            if (gt_call_result < 0 || gt_arr == nullptr) {
+
+                std::cerr
+                    << "Warning: failed to extract genotypes for "
+                    << snp
+                    << ". Skipping this variant."
+                    << std::endl;
+
+                if (gt_arr) {
+                    free(gt_arr);
+                }
+
+                continue;
+            }
+
+
+            // ----------------------------------------------------
+            // Initialize genotype dosage vector
+            // ----------------------------------------------------
+            Eigen::VectorXd tmp_g =
+                Eigen::VectorXd::Zero(common_sample.size());
+
+
+            // ----------------------------------------------------
+            // Extract genotype dosage for common samples
+            // ----------------------------------------------------
+            for (int c = 0;
+                 c < static_cast<int>(common_sample.size());
+                 ++c) {
+
+                std::string sample = common_sample[c];
+
+                std::string sample_substr =
+                    sample.substr(0, sample.find(":"));
+
+                auto sample_it =
+                    sample_idx_map.find(sample_substr);
+
+                if (sample_it == sample_idx_map.end()) {
+                    continue;
+                }
+
+                int sample_index = sample_it->second;
+
+                int dosage = 0;
+
+                // Diploid genotype: two alleles per sample
+                for (int j = sample_index * 2;
+                     j < sample_index * 2 + 2 &&
+                     j < n_gts;
+                     ++j) {
+
+                    if (gt_arr[j] != bcf_gt_missing) {
+                        dosage +=
+                            bcf_gt_allele(gt_arr[j]);
+                    }
+                }
+
+                tmp_g[c] = dosage;
+            }
+
+
+            // ----------------------------------------------------
+            // Free genotype array
+            // ----------------------------------------------------
+            free(gt_arr);
+
+
+            // ----------------------------------------------------
+            // Variant successfully read
+            // ----------------------------------------------------
+            chr_pos.push_back(snp);
             g.push_back(tmp_g);
+
+            found_any = true;
         }
 
-        hts_itr_destroy(itr);  // Destroy iterator
+
+        // ========================================================
+        // 8. No usable variants in this region
+        // ========================================================
+        if (!found_any) {
+
+            std::cerr
+                << "Warning: no usable genotype records found for "
+                << chrom << ":"
+                << start << "-"
+                << end
+                << std::endl;
+        }
+
+
+        // Destroy iterator
+        hts_itr_destroy(itr);
     }
-    cout<<g[0].size()<<"\t"<<g.size()<<"\t"<<g[0][1]<<"\t"<<g[1][1]<<"\t"<<chr_pos.size()<<endl;
-    cout<<"Genotype read in"<<endl;
+
+
+    // ============================================================
+    // 9. Determine whether any genotype was successfully read
+    // ============================================================
+    bool success = !g.empty();
+
+
+    if (success) {
+
+        std::cout
+            << "Genotype read in successfully. "
+            << "Number of variants: "
+            << g.size()
+            << "; number of samples: "
+            << g[0].size()
+            << std::endl;
+
+    } else {
+
+        std::cerr
+            << "Warning: no genotype records were successfully "
+            << "read for the requested region(s)."
+            << std::endl;
+    }
+
+
+    // ============================================================
+    // 10. Clean up
+    // ============================================================
     bcf_destroy(record);
+    hts_idx_destroy(idx);
     bcf_hdr_destroy(hdr);
     bcf_close(vcf);
+
+
+    // ============================================================
+    // 11. Return status
+    // ============================================================
+    return success;
 }
 
-
 void read_in_genotype_trans(const std::string vcf_file, const std::vector<string> &variant_id, 
-                      const std::vector<std::string> common_sample,const std::string chrom) {
+                      const std::vector<std::string> common_sample, const std::string chrom) {
     std::cout << "Start reading in Genotype!" << std::endl;
-    //vector<vector<int>> g;
-    //vector<string> chr_pos;
-    // Open VCF file
     htsFile *vcf = bcf_open(vcf_file.c_str(), "r");
     if (!vcf) {
         std::cerr << "Error opening VCF file." << std::endl;
         return;
     }
 
-    // Initialize VCF reader
     bcf_hdr_t *hdr = bcf_hdr_read(vcf);
     if (!hdr) {
         std::cerr << "Error reading VCF header." << std::endl;
@@ -497,16 +685,8 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         return;
     }
 
-    // Load the VCF index (you need to have the index file available, e.g., .csi or .tbi)
-    hts_idx_t *idx = bcf_index_load(vcf_file.c_str());
-    if (!idx) {
-        std::cerr << "Error loading VCF index." << std::endl;
-        bcf_hdr_destroy(hdr);
-        bcf_close(vcf);
-        return;
-    }
+    // No index needed: we scan the entire file sequentially
 
-    // Prepare to read records
     bcf1_t *record = bcf_init();
     if (!record) {
         std::cerr << "Error initializing VCF record." << std::endl;
@@ -515,38 +695,38 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         return;
     }
 
-    // Create sample index map
     std::unordered_map<std::string, int> sample_idx_map;
     for (int i = 0; i < bcf_hdr_nsamples(hdr); ++i) {
         sample_idx_map[hdr->samples[i]] = i;
     }
 
-    // Iterate over the positions
-        // Fetch records within the windowsize
+    // Convert variant_id to a set for fast lookup
+    std::unordered_set<std::string> variant_id_set(variant_id.begin(), variant_id.end());
+
     while (bcf_read(vcf, hdr, record) == 0) {
-            bcf_unpack(record, BCF_UN_ALL);  // Unpack record
-            if (record->d.id && std::find(variant_id.begin(), variant_id.end(), record->d.id) != variant_id.end()){
-            int pos = record->pos + 1;
-            string ref=record->d.allele[0];
-            string alt=record->d.allele[1];
-            string snp = chrom + ":" + to_string(pos)+":"+ref+":"+alt;
+        bcf_unpack(record, BCF_UN_ALL);
+        if (record->d.id && variant_id_set.find(record->d.id) != variant_id_set.end()) {
+
+            int record_pos = record->pos + 1;
+            string ref = record->d.allele[0];
+            string alt = record->d.allele[1];
+            string snp = chrom + ":" + to_string(record_pos) + ":" + ref + ":" + alt;
             chr_pos.push_back(snp);
-            // Add record ID to chr_pos
+
             Eigen::VectorXd tmp_g = Eigen::VectorXd::Zero(common_sample.size());
 
-            // Iterate through common_sample and extract genotype dosage
-            for (int c=0;c<common_sample.size();c++) {
-                string sample = common_sample[c];
-                std::string sample_substr = sample.substr(0, sample.find(":")); // Extract sample substring
-                if (sample_idx_map.find(sample_substr) != sample_idx_map.end()) {
-                    int sample_index = sample_idx_map[sample_substr];
-                    int *gt_arr = nullptr, n_gts = 0;
+            // Extract genotype array once per record, not once per sample
+            int *gt_arr = nullptr, n_gts = 0;
+            int gt_call_result = bcf_get_genotypes(hdr, record, &gt_arr, &n_gts);
 
-                    // Extract genotype information
-                    if (bcf_get_genotypes(hdr, record, &gt_arr, &n_gts) >= 0) {
+            if (gt_call_result >= 0) {
+                for (int c = 0; c < common_sample.size(); c++) {
+                    string sample = common_sample[c];
+                    std::string sample_substr = sample.substr(0, sample.find(":"));
+                    if (sample_idx_map.find(sample_substr) != sample_idx_map.end()) {
+                        int sample_index = sample_idx_map[sample_substr];
                         int dosage = 0;
 
-                        // Sum alleles to get dosage (ignoring missing values -1)
                         for (int j = sample_index * 2; j < sample_index * 2 + 2 && j < n_gts; ++j) {
                             if (gt_arr[j] != bcf_gt_missing) {
                                 dosage += bcf_gt_allele(gt_arr[j]);
@@ -554,26 +734,32 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
                         }
                         tmp_g[c] = dosage;
                     }
-
-                    if (gt_arr) {
-                        free(gt_arr);  // Free memory for genotype array
-                    }
                 }
+            } else {
+                std::cerr << "Warning: failed to extract genotypes for record " << record->d.id
+                           << " at " << chrom << ":" << record_pos << std::endl;
             }
 
-            // Append the dosage vector to g
+            if (gt_arr) {
+                free(gt_arr);
+            }
+
             g.push_back(tmp_g);
         }
-
-        // Destroy iterator
     }
-    cout<<g[0].size()<<"\t"<<g.size()<<"\t"<<g[0][1]<<"\t"<<g[1][1]<<"\t"<<chr_pos.size()<<endl;
-    cout<<"Genotype read in"<<endl;
+
+    if (!g.empty()) {
+        cout << g[0].size() << "\t" << g.size() << "\t" << g[0][1] << "\t"
+             << (g.size() > 1 ? g[1][1] : 0) << "\t" << chr_pos.size() << endl;
+    } else {
+        std::cerr << "Warning: no matching variants found in " << vcf_file << std::endl;
+    }
+    cout << "Genotype read in" << endl;
+
     bcf_destroy(record);
     bcf_hdr_destroy(hdr);
     bcf_close(vcf);
 }
-
     double calculate_stddev(const std::vector<double>& data) {
         double mean = std::accumulate(data.begin(), data.end(), 0.0) / data.size();
         double variance = 0.0;
@@ -585,118 +771,96 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
     }
 
 
-    double dispersion_estimate(int times, Eigen::MatrixXd covariate_adjusted_geno, Eigen::VectorXd residuals, Eigen::VectorXd pi,Eigen::SparseMatrix<double> Identity){
-        vector<double> test_statistics;
-        vector<double> pvalue;
-        vector<double> vari_total;
-        const double maf = 0.5;
-        random_device rd;
-        mt19937 gen(rd());
-        //uniform_int_distribution<> dis(0, 2); // Uniform distribution between 0 and 2
-        binomial_distribution<> geno_dist(2,maf);
-        double score_vector, info_matrix, test_statistic, variance;
-        Eigen::VectorXd genotype, g;
-        Eigen::VectorXd orig = Eigen::VectorXd::NullaryExpr(Identity.cols(), [&]() { return geno_dist(gen); });
-        double observed=0;
-        double expected=0;
-        for(int i=0;i<times;i++){
-            test_statistics.clear();
-            for(int j=0;j<100;j++){
-                // Simulate random genotypes
-            //g = Eigen::VectorXd::NullaryExpr(Identity.cols(), [&]() { return geno_dist(gen); });
+  vector<double> dispersion_estimate(int times, Eigen::MatrixXd covariate_adjusted_geno, Eigen::VectorXd residuals, Eigen::VectorXd pi, Eigen::SparseMatrix<double> Identity){
+    const double maf = 0.5;
+    random_device rd;
+    mt19937 gen(rd());
+    binomial_distribution<> geno_dist(2, maf);
+    double score_vector, info_matrix;
+    Eigen::VectorXd genotype, g;
+    Eigen::VectorXd orig = Eigen::VectorXd::NullaryExpr(Identity.cols(), [&]() { return geno_dist(gen); });
+    double observed = 0;
+    double expected = 0;
+
+    vector<double> results;
+
+    for(int i = 0; i < times; i++){
+        for(int j = 0; j < 100; j++){
             static thread_local std::mt19937 gen(std::random_device{}());
             std::shuffle(orig.data(), orig.data() + orig.size(), gen);
-            g=orig;
-            genotype=Identity*g;
+            g = orig;
+            genotype = Identity * g;
             // Adjust genotype
             g = genotype - covariate_adjusted_geno * genotype;
-            //g = genotype;
-            genotype = g.array() - g.mean();
-            
+
             // Compute score vector and info matrix
-            score_vector = (residuals.array() * genotype.array()).sum();
-            info_matrix = (genotype.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
-            
-            // Test statistic
-            test_statistic = score_vector / std::sqrt(info_matrix);
-            test_statistics.push_back(test_statistic);
-            observed=observed+score_vector*score_vector;
-	    expected=expected+info_matrix;
-	    }
-            variance = calculate_stddev(test_statistics);
-            vari_total.push_back(variance);
+            score_vector = (residuals.array() * g.array()).sum();
+            info_matrix = (g.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
+
+            observed = observed + score_vector * score_vector;
+            expected = expected + info_matrix;
         }
-        double vari_mean = std::accumulate(vari_total.begin(), vari_total.end(), 0.0) / vari_total.size();
-        cout<<"normalize:"<<vari_mean<<endl;
-	cout<<"normalize2:"<<std::sqrt(observed/expected)<<endl;
-        return std::sqrt(observed/expected);
     }
 
-    void compute(string output_path, string site,Eigen::SparseMatrix<double> Identity,int times){  
-        //Write in middle terms for pvalue computation: residuals, pi, total, y, dispersion
-        //need eta, X, g, y, total
-        //Compute covariate adjusted geno
-        string file = output_path + "/" + site + ".middle";
-        ofstream fout(file);
-        Eigen::MatrixXd X_T_W_X = (X.transpose()*W_) * X;
-        cout<<"rows for X_T_W_X"<<X_T_W_X.rows()<<"\t"<<X_T_W_X.rows()<<endl;
-        Eigen::MatrixXd X_T_W_X_inv = X_T_W_X.inverse();
-        Eigen::MatrixXd X_T_W = X.transpose() * W_;
-        Eigen::MatrixXd covariate_adjusted_geno = X*(X_T_W_X_inv*X_T_W);
-        Eigen::VectorXd pi = sigmoid(X*beta_hat+u_hat_);
-        Eigen::VectorXd mu = pi.array()*total_.array();
-        Eigen::VectorXd residuals = y_.array() - mu.array();
-        cout<<"Start normalize parameter estimation"<<endl;
-        double dispersion = dispersion_estimate(times,covariate_adjusted_geno,residuals,pi,Identity);
-        fout<<"Splice_site"<<"\t"<<site<<"\t"<<dispersion<<"\t"<<tau_<<endl;
-        fout<<"residuals"<<"\t";
-        for(int i = 0;i<residuals.size();i++){
-            fout<<residuals[i]<<"\t";
-        }
-        fout<<endl;
-        fout<<"pi"<<"\t";
-        for(int i = 0;i<pi.size();i++){
-            fout<<pi[i]<<"\t";
-        }
-        fout<<endl;
-        fout<<"total"<<"\t";
-        for(int i = 0;i<total_.size();i++){
-            fout<<total_[i]<<"\t";
-        }
-        fout<<endl;
-        fout<<"y"<<"\t";
-        for(int i = 0;i<y_.size();i++){
-            fout<<y_[i]<<"\t";
-        }
-        fout<<endl;
-        fout.close();
+    double variance_ratio = std::sqrt(observed / expected);
+    results.push_back(variance_ratio);
+
+    if (convergence_status_ == false) {
+        results.push_back(-1);
+        return results;
     }
 
-   double computeRegressionSlope(const Eigen::VectorXd& x, const Eigen::VectorXd& y) {
-    // Ensure the vectors are of the same size
-    if (x.size() != y.size()) {
-        throw std::invalid_argument("Vectors x and y must have the same size.");
+    return results;
+}
+
+void compute(string output_path, string site, Eigen::SparseMatrix<double> Identity, int times) {  
+    // Write in middle terms for pvalue computation: residuals, pi, total, y, dispersion
+    string file = output_path + "/" + site + ".middle";
+    ofstream fout(file);
+
+    Eigen::MatrixXd X_T_W_X = (X.transpose() * W_) * X;
+    cout << "rows for X_T_W_X " << X_T_W_X.rows() << "\t" << X_T_W_X.cols() << endl;
+    Eigen::MatrixXd X_T_W_X_inv = X_T_W_X.inverse();
+    Eigen::MatrixXd X_T_W = X.transpose() * W_;
+    Eigen::MatrixXd covariate_adjusted_geno = X * (X_T_W_X_inv * X_T_W);
+
+    Eigen::VectorXd pi = sigmoid(X * beta_hat + u_hat_);
+    Eigen::VectorXd mu = pi.array() * total_.array();
+    Eigen::VectorXd residuals = y_.array() - mu.array();
+
+    cout << "Start variance corrector factor estimation" << endl;
+
+    vector<double> dispersion = dispersion_estimate(times, covariate_adjusted_geno, residuals, pi, Identity);
+
+    string status_label = convergence_status_ ? "Converged" : "Fixed";
+    fout << status_label << "\t" << site << "\t" << dispersion[0] << "\t" << tau_ << endl;
+
+    fout << "residuals" << "\t";
+    for (int i = 0; i < residuals.size(); i++) {
+        fout << residuals[i] << "\t";
     }
+    fout << endl;
 
-    // Calculate the mean of x and y
-    double x_mean = x.mean();
-    double y_mean = y.mean();
-
-    // Calculate the standard deviation of x and y
-    double x_stddev = std::sqrt((x.array() - x_mean).square().mean());
-    double y_stddev = std::sqrt((y.array() - y_mean).square().mean());
-
-    // Normalize x and y
-    Eigen::VectorXd x_normalized = (x.array() - x_mean) / x_stddev;
-    Eigen::VectorXd y_normalized = (y.array() - y_mean) / y_stddev;
-
-    // Compute the numerator and denominator for the slope
-    double numerator = x_normalized.dot(y_normalized);
-    double denominator = x_normalized.squaredNorm();
-
-    // Calculate and return the slope
-    return numerator / denominator;
+    fout << "pi" << "\t";
+    for (int i = 0; i < pi.size(); i++) {
+        fout << pi[i] << "\t";
     }
+    fout << endl;
+
+    fout << "total" << "\t";
+    for (int i = 0; i < total_.size(); i++) {
+        fout << total_[i] << "\t";
+    }
+    fout << endl;
+
+    fout << "y" << "\t";
+    for (int i = 0; i < y_.size(); i++) {
+        fout << y_[i] << "\t";
+    }
+    fout << endl;
+
+    fout.close();
+}
 
     void pvalue_beta_sd_compute(string output_file, string site, double dispersion, double threshold, Eigen::VectorXd residuals,Eigen::VectorXd pi,Eigen::VectorXd y,Eigen::VectorXd total){
         if(chr_pos.size()==0){
@@ -706,70 +870,44 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         cout<<"Start pvalue computing!"<<endl;
         ofstream fout(output_file);
         Eigen::VectorXd tmp_t_p_1_p = total_.array() * pi.array() * (1.0 - pi.array());
-        Eigen::VectorXd tmp_p_1_p = pi.array() * (1.0 - pi.array());
-        int sample_size=residuals.size();
-        Eigen::VectorXd pheno = residuals.array()/total_.array();
         //covariate_adjusted_genotype
-        Eigen::VectorXd W_vec = ((pi.array()*(1-pi.array()))).matrix();
+        Eigen::VectorXd W_vec = (total_.array()*(pi.array()*(1-pi.array()))).matrix();
         Eigen::MatrixXd W_diag = W_vec.asDiagonal();
         W_ = W_diag.sparseView();
         Eigen::MatrixXd X_T_W_X = (X.transpose()*W_) * X;
-        cout<<"rows for X_T_W_X"<<X_T_W_X.rows()<<"\t"<<X_T_W_X.rows()<<endl;
+        cout<<"rows for X_T_W_X"<<X_T_W_X.rows()<<endl;
         Eigen::MatrixXd X_T_W_X_inv = X_T_W_X.inverse();
         Eigen::MatrixXd X_T_W = X.transpose() * W_;
         Eigen::MatrixXd covariate_adjusted_geno = X*(X_T_W_X_inv*X_T_W);
-        //
         for(int i=0;i<chr_pos.size();i++){
             const auto &g_vec = g[i];
-    // Copy values from std::vector to Eigen::VectorXd
             Eigen::VectorXd geno = g_vec - covariate_adjusted_geno * g_vec;
-            //Eigen::VectorXd geno = g_vec;
-            Eigen::VectorXd genotype = geno.array() - geno.mean();
-            
-            #pragma omp parallel
-            {
             // Compute score vector and info matrix
-            double score_vector = (residuals.array() * genotype.array()).sum();
-            //double info_matrix = (genotype.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
-            double info_matrix = (genotype.array().square() * tmp_t_p_1_p.array() ).sum();
+            double score_vector = (residuals.array() * geno.array()).sum();
+            double info_matrix = (geno.array().square() * tmp_t_p_1_p.array() ).sum();
 
             // Test statistic
             double test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
             double p_value = gsl_cdf_chisq_Q(test_statistics*test_statistics,1);
 
-    // 2. Compute variance of test statistics
-            double variance_test = std::sqrt((genotype.array().square() * tmp_t_p_1_p.array() ).sum()) * dispersion;
-
     // 3. Compute effect size
-            //double effect = test_statistics / variance_test;
-            //double effect = test_statistics/std::sqrt(sample_size);
-    // 4. Compute z_score using the inverse of the normal CDF (ppf in Python)
-            double z_score = gsl_cdf_gaussian_Pinv(1.0 - p_value / 2, 1.0);
-            double effect = computeRegressionSlope(genotype,pheno);
+            double effect = score_vector/(info_matrix*dispersion*dispersion);
     // 5. Compute standard error
-            //double standard_error = std::abs(effect / test_statistics);
-            double standard_error = std::abs(effect/z_score);
-            #pragma imp critical
-            {
+            double standard_error = 1 / (std::sqrt(info_matrix) * dispersion);
             if(p_value<threshold){
                 fout<<site<<"\t"<<chr_pos[i]<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;}
-            }
-            //fout<<site<<"\t"<<chr_pos[i]<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;}
-            }
         }
             fout.close();
     }
 
     void DS(string output_file, string site, double dispersion, vector<int> group, Eigen::VectorXd residuals,Eigen::VectorXd pi,Eigen::VectorXd y,Eigen::VectorXd total){
         ofstream fout(output_file);
-        Eigen::VectorXd tmp_t_p_1_p = total_.array() * pi.array() * (1.0 - pi.array());
-        Eigen::VectorXd tmp_p_1_p = pi.array() * (1.0 - pi.array());
+        Eigen::VectorXd tmp_t_p_1_p = total.array() * pi.array() * (1.0 - pi.array());
         Eigen::VectorXd group_double(group.size());
-        Eigen::VectorXd pheno = residuals.array()/total_.array();
         for(size_t i=0;i<group.size();i++){
             group_double[i]=static_cast<double>(group[i]);
         }
-        Eigen::VectorXd W_vec = ((pi.array()*(1-pi.array()))).matrix();
+        Eigen::VectorXd W_vec = (total.array()*(pi.array()*(1-pi.array()))).matrix();
         Eigen::MatrixXd W_diag = W_vec.asDiagonal();
         W_ = W_diag.sparseView();
         Eigen::MatrixXd X_T_W_X = (X.transpose()*W_) * X;
@@ -779,27 +917,15 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
         Eigen::MatrixXd covariate_adjusted_geno = X*(X_T_W_X_inv*X_T_W);
     // Copy values from std::vector to Eigen::VectorXd
         Eigen::VectorXd geno_double = group_double - covariate_adjusted_geno * group_double;
-        Eigen::VectorXd group_new = geno_double.array() - geno_double.mean();
             // Compute score vector and info matrix
-        double score_vector = (residuals.array() * group_new.array()).sum();
-            //double info_matrix = (genotype.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
-        double info_matrix = (group_new.array().square() * tmp_t_p_1_p.array() ).sum();
+        double score_vector = (residuals.array() * geno_double.array()).sum();
+        double info_matrix = (geno_double.array().square() * tmp_t_p_1_p.array() ).sum();
 
             // Test statistic
         double test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
         double p_value = gsl_cdf_chisq_Q(test_statistics*test_statistics,1);
-
-    // 2. Compute variance of test statistics
-        double variance_test = std::sqrt((group_new.array().square() * tmp_p_1_p.array() ).sum()) * dispersion;
-
-    // 3. Compute effect size
-        double effect = computeRegressionSlope(group_new,pheno);
-
-    // 4. Compute z_score using the inverse of the normal CDF (ppf in Python)
-        double z_score = gsl_cdf_gaussian_Pinv(1.0 - p_value / 2, 1.0);
-
-    // 5. Compute standard error
-        double standard_error = std::abs(effect / z_score);
+        double effect = score_vector/(info_matrix*dispersion*dispersion);
+        double standard_error = 1 / (std::sqrt(info_matrix) * dispersion);
 
         fout<<site<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;
         fout.close();
@@ -821,21 +947,49 @@ string get_info_as_string(bcf_hdr_t* hdr, bcf1_t* record) {
 
         if (info->len == 0) continue;
 
-        // Handle different data types
-        if (info->type == BCF_BT_INT8 || info->type == BCF_BT_INT16 || info->type == BCF_BT_INT32) {
+        // Handle different data types, using the correct pointer width for each
+        if (info->type == BCF_BT_INT8) {
+            int8_t* values = (int8_t*)info->vptr;
+            for (int j = 0; j < info->len; ++j) {
+                if (j > 0) infoString << ",";
+                if (values[j] == bcf_int8_missing) {
+                    infoString << ".";
+                } else {
+                    infoString << static_cast<int>(values[j]);
+                }
+            }
+        } else if (info->type == BCF_BT_INT16) {
+            int16_t* values = (int16_t*)info->vptr;
+            for (int j = 0; j < info->len; ++j) {
+                if (j > 0) infoString << ",";
+                if (values[j] == bcf_int16_missing) {
+                    infoString << ".";
+                } else {
+                    infoString << values[j];
+                }
+            }
+        } else if (info->type == BCF_BT_INT32) {
             int32_t* values = (int32_t*)info->vptr;
             for (int j = 0; j < info->len; ++j) {
                 if (j > 0) infoString << ",";
-                infoString << values[j];
+                if (values[j] == bcf_int32_missing) {
+                    infoString << ".";
+                } else {
+                    infoString << values[j];
+                }
             }
         } else if (info->type == BCF_BT_FLOAT) {
             float* values = (float*)info->vptr;
             for (int j = 0; j < info->len; ++j) {
                 if (j > 0) infoString << ",";
-                infoString << values[j];
+                if (bcf_float_is_missing(values[j])) {
+                    infoString << ".";
+                } else {
+                    infoString << values[j];
+                }
             }
         } else if (info->type == BCF_BT_CHAR) {
-            infoString << (char*)info->vptr;
+            infoString << std::string((char*)info->vptr, info->len);
         }
     }
 
@@ -843,349 +997,30 @@ string get_info_as_string(bcf_hdr_t* hdr, bcf1_t* record) {
 }
 
 
-int read_in_genotype_rare(const std::string vcf_file, const std::vector<string> &annotation, const std::vector<std::pair<std::string, int>> &positions,
-                      const std::vector<std::string> common_sample,const std::string chrom, int windowsize) {
-    std::cout << "Start reading in Genotype!" << std::endl;
-    //vector<vector<int>> g;
-    //vector<string> chr_pos;
-    // Open VCF file
-    htsFile *vcf = bcf_open(vcf_file.c_str(), "r");
-    if (!vcf) {
-        std::cerr << "Error opening VCF file." << std::endl;
-        return -1;
-    }
-
-    // Initialize VCF reader
-    bcf_hdr_t *hdr = bcf_hdr_read(vcf);
-    if (!hdr) {
-        std::cerr << "Error reading VCF header." << std::endl;
-        bcf_close(vcf);
-        return -1;
-    }
-
-    // Load the VCF index (you need to have the index file available, e.g., .csi or .tbi)
-    hts_idx_t *idx = bcf_index_load(vcf_file.c_str());
-    if (!idx) {
-        std::cerr << "Error loading VCF index." << std::endl;
-        bcf_hdr_destroy(hdr);
-        bcf_close(vcf);
-        return -1;
-    }
-
-    // Prepare to read records
-    bcf1_t *record = bcf_init();
-    if (!record) {
-        std::cerr << "Error initializing VCF record." << std::endl;
-        bcf_hdr_destroy(hdr);
-        bcf_close(vcf);
-        return -1;
-    }
-
-   // Create sample index map
-    std::unordered_map<std::string, int> sample_idx_map;
-    for (int i = 0; i < bcf_hdr_nsamples(hdr); ++i) {
-        sample_idx_map[hdr->samples[i]] = i;
-    }
-
-    // Iterate over the positions
-    std::pair<std::string, int> pos_info = positions[0];
-    string chr = pos_info.first;
-    int pos = pos_info.second;
-
-        // Fetch records within the windowsize
-    int start = (pos - windowsize > 0) ? (pos - windowsize) : 0;
-    int end = pos + windowsize;
-    stringstream ss;
-    ss<<chrom<<":"<<start<<"-"<<end;
-    cout<<ss.str()<<endl;
-    hts_itr_t *itr = bcf_itr_querys(idx, hdr, ss.str().c_str());
-    if (!itr) {
-            std::cerr << "Error creating iterator for " << chrom << ":" << start << "-" << end << std::endl;
-            cout<<"Error"<<endl;
-            return -1;
-    }
-
-    cout<<"iterator created!"<<endl;
-    if(bcf_itr_next(vcf,itr,record)<0){
-            cout<<"No records here"<<endl;
-            bcf_destroy(record);
-            bcf_hdr_destroy(hdr);
-            bcf_close(vcf);
-            return -1;
-    }
-    //define two vectors, MAF & distance
-    double maf,dist;
-    int pos_site=pos;
-    while (bcf_itr_next(vcf, itr, record) >= 0) {
-            bcf_unpack(record, BCF_UN_ALL);  // Unpack record
-            int pos = record->pos + 1;
-            dist = abs(pos-pos_site);
-            distance.push_back(dist);
-            string ref=record->d.allele[0];
-            string alt=record->d.allele[1];
-            // obtain variant annotation information 
-            string variant_annot = get_info_as_string(hdr, record);
-            string maf_tmp=variant_annot.substr(variant_annot.find("MAF"));
-            string maf_tmp_2=maf_tmp.substr(0,maf_tmp.find(";"));
-            maf=stod(maf_tmp_2.substr(maf_tmp_2.find("=")+1));
-            MAF.push_back(maf);
-
-            //bool exist_variant=false;
-            //for(int e=0;e<annotation.size();e++){
-            //    if(variant_annot.find(annotation[e])!=string::npos){
-            //        exist_variant=true;
-            //    }
-            //}
-
-            //need to maintain a vector with MAF and distance to splice site here 2025.12.8
-            bool exist_variant=true;
-            if(exist_variant==true){
-            string snp = chrom + ":" + to_string(pos)+":"+ref+":"+alt;
-            chr_pos.push_back(snp);
-            cout<<snp<<endl;
-            // Add record ID to chr_pos
-            Eigen::VectorXd tmp_g = Eigen::VectorXd::Zero(common_sample.size());
-
-            // Iterate through common_sample and extract genotype dosage
-            for (int c=0;c<common_sample.size();c++) {
-                string sample = common_sample[c];
-                std::string sample_substr = sample.substr(0, sample.find(":")); // Extract sample substring
-                if (sample_idx_map.find(sample_substr) != sample_idx_map.end()) {
-                    int sample_index = sample_idx_map[sample_substr];
-                    int *gt_arr = nullptr, n_gts = 0;
-
-                    // Extract genotype information
-                    if (bcf_get_genotypes(hdr, record, &gt_arr, &n_gts) >= 0) {
-                        int dosage = 0;
-
-                        // Sum alleles to get dosage (ignoring missing values -1)
-                        for (int j = sample_index * 2; j < sample_index * 2 + 2 && j < n_gts; ++j) {
-                            if (gt_arr[j] != bcf_gt_missing) {
-                                dosage += bcf_gt_allele(gt_arr[j]);
-                            }
-                        }
-                        tmp_g[c] = dosage;
-                    }
-
-                    if (gt_arr) {
-                        free(gt_arr);  // Free memory for genotype array
-                    }
-                }
-            }
-
-            // Append the dosage vector to g
-            g.push_back(tmp_g);
-    }}
-    hts_itr_destroy(itr);  // Destroy iterator
-    cout<<"destroy itr"<<endl;
-    
-    cout<<g[0].size()<<"\t"<<g.size()<<"\t"<<g[0][1]<<"\t"<<chr_pos.size()<<endl;
-    cout<<"Genotype read in"<<endl;
-    bcf_destroy(record);
-    bcf_hdr_destroy(hdr);
-    bcf_close(vcf);
-    return g.size();
-}
-
-double beta_pdf(double x, double alpha, double beta) {
-    if (x < 0.0 || x > 1.0) {
-        return 0.0; // Beta distribution is defined on the interval [0, 1]
-    }
-
-    // Compute Beta function B(alpha, beta) = Gamma(alpha) * Gamma(beta) / Gamma(alpha + beta)
-    double beta_function = std::tgamma(alpha) * std::tgamma(beta) / std::tgamma(alpha + beta);
-
-    // Beta PDF formula
-    return (std::pow(x, alpha - 1) * std::pow(1 - x, beta - 1)) / beta_function;
-}
-
-void collapse_genotype(int windowsize){
-    // incorporate both MAF & weight
-    vector<Eigen::VectorXd> g_tmp = g;
-    int n = g.front().size();
-    Eigen::VectorXd result = Eigen::VectorXd::Constant(n,0);
-    for(int i=0;i<distance.size();i++){
-        //double weight_MAF = beta_pdf(MAF[i], alpha, beta);;
-        //double weight_distance = beta_pdf(distance[i]/windowsize, alpha, beta);;
-        double weight= exp(-(distance[i]*MAF[i]));
-        //cout<<"weight"<<weight_MAF<<"\t"<<weight_distance<<endl;
-        for(int j=0;j<g[i].size();j++){
-            g[i][j]*=weight;
-        }
-        result=result+g[i];
-    }
-    //for (const auto& v : g) {
-    //    result = result.cwiseMax(v); // elementwise max
-    //}
-    g.clear();
-    /*double minVal=result.minCoeff();
-    double maxVal=result.maxCoeff();
-    Eigen::VectorXd scaled = (result.array() - minVal) / (maxVal - minVal);
-    for (int i = 0; i < scaled.size(); ++i) {
-        if (scaled[i] < 0.33) {
-            scaled[i] = 0;
-        } else if (scaled[i] < 0.66) {
-            scaled[i] = 1;
-        } else {
-            scaled[i] = 2;
-        }
-    }*/
-    //g.push_back(scaled);
-    g.push_back(result);
-    Eigen::VectorXd result_tmp=result;
-    double weight;
-    for(int i=0;i<distance.size();i++){
-        //double weight_MAF = beta_pdf(MAF[i], alpha, beta);;
-        //double weight_distance = beta_pdf(distance[i]/windowsize, alpha, beta);;
-        weight= exp(-(distance[i]*MAF[i]));
-        //cout<<"weight"<<weight_MAF<<"\t"<<weight_distance<<endl;
-        for(int j=0;j<g_tmp[i].size();j++){
-            g_tmp[i][j]*=weight;
-        }
-        result_tmp=result-g_tmp[i];
-        /*minVal=result_tmp.minCoeff();
-        maxVal=result_tmp.maxCoeff();
-        scaled = (result_tmp.array() - minVal) / (maxVal - minVal);
-        for (int i = 0; i < scaled.size(); ++i) {
-         if (scaled[i] < 0.33) {
-            scaled[i] = 0;
-         } else if (scaled[i] < 0.66) {
-            scaled[i] = 1;
-         } else {
-            scaled[i] = 2;
-        }
-        }*/
-        g.push_back(result_tmp);
-    }
-    cout<<"genotype collapse"<<endl;
-    cout<<g[0].size()<<"\t"<<g.size()<<"\t"<<g[0][1]<<"\t"<<chr_pos.size()<<endl;
-}
-
-double compute_MAF(const Eigen::VectorXd& geno) {
-    // Count the occurrences of 0s, 1s, and 2s in geno
-    double count_0 = (geno.array() == 0).count(); // number of homozygous reference
-    //double count_1 = (geno.array() == 1).count(); // number of heterozygous
-    //double count_2 = (geno.array() == 2).count(); // number of homozygous alternate
-    double count_2 = (geno.array() != 0).count();
-    // Total number of alleles (2 alleles per genotype)
-    double total_alleles = 2 * geno.size();
-    
-    // Count of reference (0) and alternate (2) alleles
-    double count_reference_allele = count_0 * 2 ; // Each homozygous reference contributes 2, heterozygous contributes 1
-    double count_alternate_allele = count_2 * 2 ; // Each homozygous alternate contributes 2, heterozygous contributes 1
-
-    // MAF is the frequency of the minor allele (the less frequent one)
-    double maf = std::min(count_reference_allele, count_alternate_allele) / total_alleles;
-    
-    return maf;
-}
-
-void pvalue_beta_sd_compute_rare(string output_file, string site, double dispersion, double threshold, Eigen::VectorXd residuals,Eigen::VectorXd pi,Eigen::VectorXd y,Eigen::VectorXd total){
-        if(chr_pos.size()==0){
-            cout<<"No genotype here"<<endl;
-            return;
-        }
-        cout<<"Start pvalue computing!"<<endl;
-        ofstream fout(output_file);
-        Eigen::VectorXd tmp_t_p_1_p = total_.array() * pi.array() * (1.0 - pi.array());
-        Eigen::VectorXd tmp_p_1_p = pi.array() * (1.0 - pi.array());
-        int sample_size=residuals.size();
-        Eigen::VectorXd pheno = residuals.array()/total_.array();
-        //covariate_adjusted_genotype
-        Eigen::VectorXd W_vec = ((pi.array()*(1-pi.array()))).matrix();
-        Eigen::MatrixXd W_diag = W_vec.asDiagonal();
-        W_ = W_diag.sparseView();
-        Eigen::MatrixXd X_T_W_X = (X.transpose()*W_) * X;
-        cout<<"rows for X_T_W_X"<<X_T_W_X.rows()<<"\t"<<X_T_W_X.rows()<<endl;
-        Eigen::MatrixXd X_T_W_X_inv = X_T_W_X.inverse();
-        Eigen::MatrixXd X_T_W = X.transpose() * W_;
-        Eigen::MatrixXd covariate_adjusted_geno = X*(X_T_W_X_inv*X_T_W);
-        //
-        double maf = 0;
-        const auto &g_vec = g[0];
-        maf = compute_MAF(g_vec);
-    // Copy values from std::vector to Eigen::VectorXd
-        Eigen::VectorXd geno = g_vec - covariate_adjusted_geno * g_vec;
-            //Eigen::VectorXd geno = g_vec;
-        Eigen::VectorXd genotype = geno.array() - geno.mean();
-            // Compute score vector and info matrix
-        double score_vector = (residuals.array() * genotype.array()).sum();
-            //double info_matrix = (genotype.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
-        double info_matrix = (genotype.array().square() * tmp_t_p_1_p.array() ).sum();
-
-            // Test statistic
-        double test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
-        double p_value = gsl_cdf_chisq_Q(test_statistics*test_statistics,1);
-
-    // 2. Compute variance of test statistics
-        double variance_test = std::sqrt((genotype.array().square() * tmp_t_p_1_p.array() ).sum()) * dispersion;
-
-    // 3. Compute effect size
-            //double effect = test_statistics / variance_test;
-            //double effect = test_statistics/std::sqrt(sample_size);
-    // 4. Compute z_score using the inverse of the normal CDF (ppf in Python)
-        double z_score = gsl_cdf_gaussian_Pinv(1.0 - p_value / 2, 1.0);
-        double effect = computeRegressionSlope(genotype,pheno);
-    // 5. Compute standard error
-            //double standard_error = std::abs(effect / test_statistics);
-        double standard_error = std::abs(effect/z_score);
-        #pragma imp critical
-        {
-            if(p_value<threshold){
-                fout<<site<<"\t"<<"burden"<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<"\t"<<maf<<endl;}
-        }
-            //fout<<site<<"\t"<<chr_pos[i]<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;}
-
-        double total_test_statistics=test_statistics;
-        double relative_contribution;
-        for(int i=0;i<chr_pos.size();i++){
-            const auto &g_vec = g[i+1];
-            maf = compute_MAF(g_vec);
-    // Copy values from std::vector to Eigen::VectorXd
-            geno = g_vec - covariate_adjusted_geno * g_vec;
-            //Eigen::VectorXd geno = g_vec;
-            genotype = geno.array() - geno.mean();
-            
-            #pragma omp parallel
-            {
-            // Compute score vector and info matrix
-            score_vector = (residuals.array() * genotype.array()).sum();
-            //double info_matrix = (genotype.array().square() * total_.array() * pi.array() * (1.0 - pi.array())).sum();
-            info_matrix = (genotype.array().square() * tmp_t_p_1_p.array()).sum();
-
-            // Test statistic
-            test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
-            relative_contribution = 1-(test_statistics/total_test_statistics)*(test_statistics/total_test_statistics);
-    // 5. Compute standard error
-            //double standard_error = std::abs(effect / test_statistics);
-            #pragma imp critical
-            {
-            if(p_value<threshold){
-                fout<<site<<"\t"<<chr_pos[i]<<"\t"<<relative_contribution<<"\t"<<maf<<endl;}
-            }
-            //fout<<site<<"\t"<<chr_pos[i]<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;}
-            }
-        }
-            fout.close();
-    }
-
 private:
     Eigen::VectorXd& eta;
     Eigen::VectorXd& u_hat_;
     const Eigen::MatrixXd& X;
     Eigen::VectorXd& beta_hat;
     const Eigen::SparseMatrix<double> K;
+    const Eigen::SparseMatrix<double> I;     
     Eigen::SparseMatrix<double> W_;
     Eigen::MatrixXd& sigma_inv_X;
-    const int max_iteration;
-    const double tol;
+    const int max_iteration_;
+    Eigen::SparseMatrix<double> sigma;
+    const double tol_;
     vector<Eigen::VectorXd> g;
     vector<string> chr_pos;
     vector<double> MAF;
     vector<double> distance;
     Eigen::VectorXd& y_;
     Eigen::VectorXd& total_;
-    double tau_;
+    double tau_;                             
+    double tau_o_;                             
+    bool convergence_status_;
+    Eigen::VectorXd u_hat_g_;                  
+    Eigen::VectorXd u_hat_o_;                  
+    vector<std::pair<double,double>> tau_trace_; 
 };
 
 int model(int argc, char *argv[]);
@@ -1194,8 +1029,6 @@ int DS_parse_options(int argc, char *argv[]);
 int QTL(int argc, char *argv[]);
 int trans_QTL(int argc, char *argv[]);
 int DS(int argc, char *argv[]);
-int rare_mapping(int argc, char *argv[]);
-int rare_mapping_parse_options(int argc, char *argv[]);
 
 
 #endif

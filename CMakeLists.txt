@@ -42,7 +42,7 @@ include_directories(${EIGEN_INCLUDE_DIR})
 include_directories(${NLOPT_INCLUDE_DIR})
 #The main executable
 add_executable (ISSAC eigen_decom.cpp eigen_decom.h IR_denominator_quant.cpp pheno.h phenotype_group.cpp phenotype_output.cpp IR_combine.cpp
-  IR_denominator_quant.h rare_variant.cpp junc_stat.cpp junctions_extractor.cc junctions_extractor.h main.cpp)
+  IR_denominator_quant.h junc_stat.cpp junctions_extractor.cc junctions_extractor.h main.cpp)
 
 target_link_libraries(ISSAC ${HTSLIB_LIBRARY})
 
