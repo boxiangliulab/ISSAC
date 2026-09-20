@@ -412,7 +412,10 @@ $ISSAC model \
   -n 617 \
   -g model_construct_QTL_mapping/GRM.txt \
   -u model_construct_QTL_mapping/model \
-  -t 10
+  -t 10 \
+  -v 0.05 \
+  -i 30 \
+  -l 0.001
 ```
 
 | Flag | Description |
@@ -422,7 +425,10 @@ $ISSAC model \
 | `-n` | Number of individuals in the GRM file |
 | `-g` | GRM file (`.txt`) |
 | `-u` | Output directory/prefix for fitted null model files |
-| `-t` | Number of normalization parameter estimation iterations (×10) |
+| `-t` | Number of variance correction factor estimation iterations (×10) |
+| `-v` | GRM sparsification threshold; relatedness values below this threshold are set to zero |
+| `-i` | Maximum number of iterations for estimating fixed and random effects                  |
+| `-l` | Convergence threshold for iterative parameter estimation (default: 0.001)             |
 
 **Example model file output:**
 
