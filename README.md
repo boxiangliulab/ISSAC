@@ -76,11 +76,10 @@ Usage:          ISSAC <command> [options]
 Command:        Integrative single-cell splicing analysis and QTL caller
 ```
 
-# To use your own data, bind mount the data directory, e.g.:
+ To use your own data, bind mount the data directory, e.g.:
 ```
-apptainer exec --bind /path/to/your/data:/path/to/your/data issac.sif ISSAC QTL [options]
+apptainer exec --bind /path/to/your/data:/path/to/your/data issac.sif ISSAC QTL -h
 ```
----
 ---
 
 ## Pipeline Overview
