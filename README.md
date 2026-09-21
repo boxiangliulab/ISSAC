@@ -11,31 +11,85 @@ ISSAC provides a complete pipeline for single-cell splicing analysis, including:
 - Null binomial model construction
 - Score tests for cis-sQTL mapping
 
+---
+
+## Installation & Test Data
+
+ISSAC can be run in three ways: natively on Linux (after building from source), via Docker (for Mac, Windows, and Linux), or via Apptainer/Singularity (for HPC clusters). A small example dataset is provided under `test_data/` to verify your installation and explore ISSAC's functionality.
+
+### Clone the repository
+
+```bash
+git clone -b master https://github.com/boxiangliulab/ISSAC.git
+cd ISSAC/test_data/
+```
+
+### Option 1: Native Linux build
+
+If you have built ISSAC from source on Linux (see the build instructions above), run the test pipeline directly:
+
+```bash
+bash test_detail.sh
+```
+
+### Option 2: Docker (Mac, Windows, Linux)
+
+No local build required — this pulls a prebuilt container supporting both `amd64` and `arm64` (Apple Silicon) architectures.
+
+```bash
+bash docker_test.sh
+```
+
+> **Windows users:** run this script inside Git Bash or WSL, not PowerShell/CMD.
+
+A successful run will show intermediate output such as `Converged`, `Genotype read in successfully`, and the pipeline completing through `Start pvalue computing!` without errors.
+
+If you prefer to run ISSAC manually rather than via the wrapper script:
+
+```bash
+docker pull yuntian1999/issac:v1.3
+docker run --rm yuntian1999/issac:v1.3 -h
+```
+
+To use your own data, mount your working directory and set it as the container's working directory:
+
+```bash
+docker run --rm -v "$PWD":"$PWD" -w "$PWD" yuntian1999/issac:v1.3 QTL [options]
+```
+
+### Option 3: Apptainer/Singularity (HPC users)
+
+```bash
+module load apptainer
+bash apptainer_test.sh
+```
+
+If you prefer to run ISSAC manually:
+
+```bash
+apptainer pull issac.sif docker://yuntian1999/issac:v1.3
+apptainer exec issac.sif ISSAC -h
+```
+
+To use your own data, bind mount your working directory:
+
+```bash
+apptainer exec --bind "$PWD":"$PWD" --pwd "$PWD" issac.sif ISSAC QTL [options]
+```
 
 ---
 
-## Test Data
+## Notes
 
-A small example dataset is provided to verify your installation and explore ISSAC's functionality.
+- Docker images are published at [`yuntian1999/issac`](https://hub.docker.com/r/yuntian1999/issac) and support both `linux/amd64` and `linux/arm64` platforms.
+- The Apptainer `.sif` container is built directly from the same Docker image, so results are identical across all three installation methods.
 
-### Download & Run
-```bash
-# Clone the repository
-git clone -b master https://github.com/boxiangliulab/ISSAC.git
-
-# Navigate to the test data directory
-cd ISSAC/test_data/
-
-# Run the test pipeline
-bash test_detail.sh
-```
 
 ### What the test pipeline covers
 - Single-cell junction extraction
 - Site-based splice event quantification
 - Null binomial model construction
-- cis- and trans-sQTL mapping
-- Differential splicing analysis
+- cis-sQTL mapping
 
 ### Expected output
 ```

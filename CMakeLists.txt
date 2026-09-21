@@ -7,8 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 include_directories(gtf/
                     utils/
-                    utils/htslib/
-                    utils/htslib/htslib/
                     utils/bedtools/bedFile/
                     utils/bedtools/lineFileUtilities/
                     utils/bedtools/gzstream/

@@ -220,8 +220,9 @@ CMakeFiles/ISSAC.dir/phenotype_group.cpp.o: \
  /home/users/nus/e0950183/ISSAC_env/x86_64-conda-linux-gnu/include/c++/9.5.0/stdlib.h \
  /home/users/nus/e0950183/ISSAC_env/x86_64-conda-linux-gnu/sysroot/usr/include/sys/stat.h \
  /home/users/nus/e0950183/ISSAC_env/x86_64-conda-linux-gnu/sysroot/usr/include/bits/stat.h \
- /data/projects/11003054/e0950183/ISSAC_revise_second_review/ISSAC_9_17_upload_github/utils/htslib/htslib/sam.h \
- /data/projects/11003054/e0950183/ISSAC_revise_second_review/ISSAC_9_17_upload_github/utils/htslib/htslib/hts.h \
+ /home/users/nus/e0950183/ISSAC_env/include/htslib/sam.h \
+ /home/users/nus/e0950183/ISSAC_env/include/htslib/hts.h \
+ /home/users/nus/e0950183/ISSAC_env/include/htslib/hts_defs.h \
  /home/users/nus/e0950183/ISSAC_env/x86_64-conda-linux-gnu/include/c++/9.5.0/unordered_map \
  /home/users/nus/e0950183/ISSAC_env/x86_64-conda-linux-gnu/include/c++/9.5.0/bits/hashtable.h \
  /home/users/nus/e0950183/ISSAC_env/x86_64-conda-linux-gnu/include/c++/9.5.0/bits/hashtable_policy.h \
