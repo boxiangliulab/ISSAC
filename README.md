@@ -37,7 +37,7 @@ conda install -c bioconda htslib=1.3
 
 ---
 
-## Installation
+## Installation by compile
 
 ```bash
 git clone --branch master https://github.com/boxiangliulab/ISSAC.git
@@ -61,6 +61,26 @@ Set the path to the compiled binary for use throughout the pipeline:
 ISSAC=path/to/ISSAC/build/ISSAC
 ```
 
+## Installation by container
+
+```bash
+module load apptainer
+apptainer pull issac.sif docker://yuntian1999/issac:v1.1
+apptainer exec issac.sif ISSAC -h
+```
+
+A successful installation will print:
+
+```
+Usage:          ISSAC <command> [options]
+Command:        Integrative single-cell splicing analysis and QTL caller
+```
+
+# To use your own data, bind mount the data directory, e.g.:
+```
+apptainer exec --bind /path/to/your/data:/path/to/your/data issac.sif ISSAC QTL [options]
+```
+---
 ---
 
 ## Pipeline Overview
