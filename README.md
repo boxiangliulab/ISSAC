@@ -19,23 +19,6 @@
 - [Trans-sQTL Identification](#trans-sqtl-identification)
 
 ---
-
-## Dependencies
-
-The following C++ libraries must be available in your environment before building ISSAC (python version:3.8):
-
-1. htslib 1.3
-2. gsl
-3. eigen3
-4. nlopt
-5. crypto (openssl)
-
-```bash
-conda install -c conda-forge gsl eigen nlopt openssl
-conda install -c bioconda htslib=1.3
-```
-
----
 ## Installation & Test Data
 
 ISSAC can be run in three ways: natively on Linux (after building from source), via Docker (for Mac, Windows, and Linux), or via Apptainer/Singularity (for HPC clusters). A small example dataset is provided under `test_data/` to verify your installation and explore ISSAC's functionality.
@@ -49,6 +32,19 @@ cd ISSAC/test_data/
 
 ### Option 1: Native Linux build
 
+#### Dependencies
+
+The following C++ libraries must be available in your environment before building ISSAC (python version:3.8) if you want to compile yourself:
+
+1. htslib 1.3
+2. gsl
+3. eigen3
+4. nlopt
+5. crypto (openssl)
+
+```bash
+conda install -c conda-forge gsl eigen nlopt openssl
+conda install -c bioconda htslib=1.3
 If you have built ISSAC from source on Linux (see the build instructions above), run the test pipeline directly:
 
 ```bash
