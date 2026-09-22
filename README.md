@@ -36,50 +36,77 @@ conda install -c bioconda htslib=1.3
 ```
 
 ---
+## Installation & Test Data
 
-## Installation by compile
+ISSAC can be run in three ways: natively on Linux (after building from source), via Docker (for Mac, Windows, and Linux), or via Apptainer/Singularity (for HPC clusters). A small example dataset is provided under `test_data/` to verify your installation and explore ISSAC's functionality.
 
-```bash
-git clone --branch master https://github.com/boxiangliulab/ISSAC.git
-cd ISSAC/build
-rm -rf *  ##if you would like to reinstall ISSAC; pre-built ISSAC exists in the directory and could be directly used
-cmake ..  ##
-make      ##
-./ISSAC -h
-```
-
-A successful installation will print:
-
-```
-Usage:          ISSAC <command> [options]
-Command:        Integrative single-cell splicing analysis and QTL caller
-```
-
-Set the path to the compiled binary for use throughout the pipeline:
+### Clone the repository
 
 ```bash
-ISSAC=path/to/ISSAC/build/ISSAC
+git clone -b master https://github.com/boxiangliulab/ISSAC.git
+cd ISSAC/test_data/
 ```
 
-## Installation by container
+### Option 1: Native Linux build
+
+If you have built ISSAC from source on Linux (see the build instructions above), run the test pipeline directly:
+
+```bash
+bash test_detail.sh
+```
+
+### Option 2: Docker (Mac, Windows, Linux)
+
+No local build required — this pulls a prebuilt container supporting both `amd64` and `arm64` (Apple Silicon) architectures.
+
+```bash
+bash docker_test.sh
+```
+
+> **Windows users:** run this script inside Git Bash or WSL, not PowerShell/CMD.
+
+A successful run will show intermediate output such as `Converged`, `Genotype read in successfully`, and the pipeline completing through `Start pvalue computing!` without errors.
+
+If you prefer to run ISSAC manually rather than via the wrapper script:
+
+```bash
+docker pull yuntian1999/issac:v1.3
+docker run --rm yuntian1999/issac:v1.3 -h
+```
+
+To use your own data, mount your working directory and set it as the container's working directory:
+
+```bash
+docker run --rm -v "$PWD":"$PWD" -w "$PWD" yuntian1999/issac:v1.3 QTL [options]
+```
+
+### Option 3: Apptainer/Singularity (HPC users)
 
 ```bash
 module load apptainer
-apptainer pull issac.sif docker://yuntian1999/issac:v1.1
+bash apptainer_test.sh
+```
+
+If you prefer to run ISSAC manually:
+
+```bash
+apptainer pull issac.sif docker://yuntian1999/issac:v1.3
 apptainer exec issac.sif ISSAC -h
 ```
 
-A successful installation will print:
+To use your own data, bind mount your working directory:
 
-```
-Usage:          ISSAC <command> [options]
-Command:        Integrative single-cell splicing analysis and QTL caller
+```bash
+apptainer exec --bind "$PWD":"$PWD" --pwd "$PWD" issac.sif ISSAC QTL [options]
 ```
 
- To use your own data, bind mount the data directory, e.g.:
-```
-apptainer exec --bind /path/to/your/data:/path/to/your/data issac.sif ISSAC QTL -h
-```
+---
+
+## Notes
+
+- Docker images are published at [`yuntian1999/issac`](https://hub.docker.com/r/yuntian1999/issac) and support both `linux/amd64` and `linux/arm64` platforms.
+- The Apptainer `.sif` container is built directly from the same Docker image, so results are identical across all three installation methods.
+
 ---
 
 ## Pipeline Overview
