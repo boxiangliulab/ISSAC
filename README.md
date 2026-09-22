@@ -26,10 +26,24 @@ cd ISSAC/test_data/
 
 ### Option 1: Native Linux build
 
+#### Dependencies
+
+The following C++ libraries must be available in your environment before building ISSAC (python version:3.8) if you want to compile yourself:
+
+1. htslib 1.3
+2. gsl
+3. eigen3
+4. nlopt
+5. crypto (openssl)
+
+```bash
+conda install -c conda-forge gsl eigen nlopt openssl
+conda install -c bioconda htslib=1.3
+```
 If you have built ISSAC from source on Linux (see the build instructions above), run the test pipeline directly:
 
 ```bash
-bash test_detail.sh
+bash linux_test.sh
 ```
 
 ### Option 2: Docker (Mac, Windows, Linux)
