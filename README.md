@@ -45,10 +45,11 @@ The following C++ libraries must be available in your environment before buildin
 ```bash
 conda install -c conda-forge gsl eigen nlopt openssl
 conda install -c bioconda htslib=1.3
+```
 If you have built ISSAC from source on Linux (see the build instructions above), run the test pipeline directly:
 
 ```bash
-bash test_detail.sh
+bash linux_test.sh
 ```
 
 ### Option 2: Docker (Mac, Windows, Linux)
