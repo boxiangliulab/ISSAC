@@ -125,21 +125,7 @@ test_data/
 
 ---
 
-## Installation
 
-```bash
-git clone https://github.com/your-org/ISSAC.git
-cd ISSAC/build
-./ISSAC -h
-```
-
-Set the path to the compiled binary:
-
-```bash
-ISSAC=../build/ISSAC
-```
-
----
 
 ## Pipeline Overview
 
