@@ -138,7 +138,7 @@ for(i in start:end){
     num<-which(model_data$AD==0)
     newmodel<-model_data[num,]
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
-        sex + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group), 
+        sex + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group)+(1|obs), 
                data = newmodel, 
                family = binomial(link="logit"))
     final_result$V8[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
