@@ -107,6 +107,7 @@ for(i in start:end){
     geno_sex=as.numeric(total[4,])*as.numeric(PC[14,])
     )
     model_data$fal<-model_data$tot-model_data$suc
+    model_data$obs <- factor(seq_len(nrow(model_data)))
     ###Perform subsample to AD
     AD_male<-intersect(which(model_data$sex==1),which(model_data$AD==1))
     nonAD_male<-intersect(which(model_data$sex==1),which(model_data$AD==0))
@@ -131,11 +132,11 @@ for(i in start:end){
     model_data<-model_data[new_sample,]
     pheno_revise<-pheno_revise[new_sample]
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
-        sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + geno_sex+(1|group), 
+        sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + geno_sex+(1|group)+(1|obs), 
                data = model_data, 
                family = binomial(link = "logit"))
     #model <- glmmTMB(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
-    #    sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + geno_sex+(1|group), 
+    #    sex + age + AD + ROS_MAP + PMI + num_cells + educ + data_source + geno + geno_sex+(1|group)+(1|obs), 
     #           data = model_data, 
     #           family = binomial)
     final_result$V5[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
@@ -143,7 +144,7 @@ for(i in start:end){
     num<-which(model_data$sex==1)
     newmodel<-model_data[num,]
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
-        AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group), 
+        AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group)+(1|obs), 
                data = newmodel, 
                family = binomial(link = "logit"))
     final_result$V8[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
@@ -151,7 +152,7 @@ for(i in start:end){
     num<-which(model_data$sex==2)
     newmodel<-model_data[num,]
     model <- glmer(cbind(suc, fal) ~ sPC1 + sPC2 + sPC3 + sPC4 + sPC5 + sPC6 + sPC7 + sPC8 + gPC1 + gPC2 + gPC3 + gPC4 + gPC5 + 
-        AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group), 
+        AD + age + ROS_MAP + PMI + num_cells + educ + data_source + geno+(1|group)+(1|obs), 
                data = newmodel, 
                family = binomial(link = "logit"))
     final_result$V9[i]<-summary(model)$coefficients[,'Pr(>|z|)']['geno']
