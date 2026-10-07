@@ -86,6 +86,7 @@ PC_file=model_construct_QTL_mapping/gdT_GZMBhi_meta5.PC
 genotype=model_construct_QTL_mapping/test.bcf
 common_name=model_construct_QTL_mapping/gdT_GZMBhi_meta5.common
 
+###permute method
 $ISSAC model \
   -s $site_pheno \
   -p $PC_file \
@@ -95,7 +96,22 @@ $ISSAC model \
   -i 30 \
   -l 0.001 \
   -u model_construct_QTL_mapping/model \
+  -m permute \
   -t 10
+
+
+###random sample method
+$ISSAC model \
+  -s $site_pheno \
+  -p $PC_file \
+  -n 617 \
+  -g model_construct_QTL_mapping/GRM.txt \
+  -v 0.05 \
+  -i 30 \
+  -l 0.001 \
+  -u model_construct_QTL_mapping/model \
+  -m sample \
+  -r model_construct_QTL_mapping/null_markers.txt
 
 ls model_construct_QTL_mapping/model/* \
   | cut -d '/' -f 3 \

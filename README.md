@@ -337,11 +337,20 @@ $ISSAC pheno_output \
 
 ## Step 3: Model Construction & QTL Mapping
 
-Fits a binomial mixed model (GLMM) per splice site using a genetic relatedness matrix (GRM) to account for genetic relatedness and population structure, then performs cis-sQTL mapping within a defined window around each site.
+Fits a binomial mixed model (GLMM) per splice site using a genetic relatedness matrix (GRM) to account for repeated measures and donor relatedness, then performs cis-sQTL mapping within a defined window around each site.
 
 ### 3a. Null Model Construction
 
-Pre-fits null GLMMs (without genotype) for each splice site to avoid redundant computation during QTL mapping.
+Pre-fits null GLMMs (without genotype) for each splice site to avoid redundant computation during QTL mapping. During this step, ISSAC also estimates the site-specific variance correction factor *r*, which accounts for the discrepancy between the true variance of the score statistic and the variance under the naïve working-weight matrix. Two estimation modes are available:
+
+| Mode | Option | Recommended for |
+| ---- | ------ | --------------- |
+| **Permutation** (default) | `-m permute` | Cohorts with limited between-donor relatedness (e.g., most population-based single-cell cohorts) |
+| **Real-marker sampling** (SAIGE-style) | `-m sample -r <file>` | Cohorts with substantial between-donor relatedness |
+
+#### Option 1: Permutation-based correction (default)
+
+*r* is estimated by permuting a synthetic genotype vector (MAF = 0.5) across donors, with all metacells from the same donor sharing the same permuted genotype. This approach does not require stable estimation of the variance components and therefore applies to all splice sites, including those at which the mixed model fails to converge. It assumes that donors are approximately exchangeable under the null.
 
 ```bash
 site_pheno=model_construct_QTL_mapping/gdT_GZMBhi_meta5_test.filtered
@@ -360,6 +369,44 @@ $ISSAC model \
   -l 0.001
 ```
 
+#### Option 2: SAIGE-style correction using real markers
+
+*r* is estimated as the mean ratio G<sup>T</sup>PG / G<sup>T</sup>WG across user-provided real, unpermuted markers, which preserves the relatedness structure among donors.
+
+```bash
+$ISSAC model \
+  -s $site_pheno \
+  -p $PC_file \
+  -n 617 \
+  -g model_construct_QTL_mapping/GRM.txt \
+  -u model_construct_QTL_mapping/model \
+  -v 0.05 \
+  -i 30 \
+  -l 0.001 \
+  -m sample \
+  -r model_construct_QTL_mapping/null_markers.txt
+```
+
+In this mode, splice sites are handled according to their model-fitting status:
+
+| Model-fitting status | Variance correction |
+| -------------------- | ------------------- |
+| Converged, τ<sub>g</sub> > 10<sup>-6</sup> | SAIGE-style G<sup>T</sup>PG / G<sup>T</sup>WG ratio |
+| Not converged or lower boundary | Site excluded |
+
+**Marker genotype file format (`-r`).** Tab-delimited; the first column is the donor ID, and each remaining column is one marker with genotype dosages (0/1/2; missing values as `NA`). **Donors must be in the same order as in the GRM file.** An optional header line is allowed.
+
+```
+donor_id   rs1001   rs1002   rs1003   ...
+D001       0        1        2
+D002       1        0        1
+D003       2        1        0
+```
+
+We recommend using at least 30 common (MAF ≥ 0.05), approximately independent markers located on chromosomes other than the tested splice sites, so that they have no *cis* effect on splicing. 
+
+#### Options
+
 | Flag | Description                                                                           |
 | ---- | ------------------------------------------------------------------------------------- |
 | `-s` | Filtered splicing phenotype file                                                      |
@@ -367,10 +414,12 @@ $ISSAC model \
 | `-n` | Number of individuals in the GRM file                                                 |
 | `-g` | Genetic relatedness matrix (GRM) file for modeling genetic relatedness                |
 | `-u` | Output directory/prefix for fitted null model files                                   |
-| `-t` | Number of normalization parameter estimation iterations (×100)                        |
+| `-t` | Number of permutations for estimating *r*, in units of 100 (default: 10, i.e., 1,000 permutations); used only in permutation mode or for boundary sites in sample mode |
 | `-v` | GRM sparsification threshold; relatedness values below this threshold are set to zero |
 | `-i` | Maximum number of iterations for estimating fixed and random effects                  |
 | `-l` | Convergence threshold for iterative parameter estimation (default: 0.001)             |
+| `-m` | Variance correction mode: `permute` (default) or `sample`                             |
+| `-r` | Marker genotype file; required when `-m sample` is used                               |
 
 
 Collect sites for which null models were successfully built:

@@ -67,6 +67,9 @@ class QTL_mapping {
         vector<string> PC_name;
         vector<string> GRM_name;
         vector<string> common_name; // samples used for QTL mapping
+        string ratio_mode_;
+        string marker_file_;
+        Eigen::MatrixXd user_geno_;  
     public:
         //Default constructor
         QTL_mapping() {
@@ -118,7 +121,6 @@ class QTL_mapping {
 
 class REMLOptimizer {
 public:
-    // This class wraps your optimization problem
 
     REMLOptimizer(Eigen::VectorXd& eta, const Eigen::MatrixXd& X, 
                   Eigen::VectorXd& beta_hat,Eigen::VectorXd& u_hat_, Eigen::VectorXd& y_, 
@@ -325,7 +327,7 @@ void update(Eigen::VectorXd& y, Eigen::VectorXd& total){
 
         if (tau_converged && beta_converged) {
             std::cout << "Converged\n";
-            std::cout << "Final tau_g: " << tau_g << std::endl;
+            std::cout << "Final tau: " << tau_g << std::endl;
             convergence_status_=true;
             tau_   = tau_g;   
             tau_o_ = tau_o;  
@@ -365,7 +367,9 @@ void update(Eigen::VectorXd& y, Eigen::VectorXd& total){
 }
 
     // facilitate computation
-    Eigen::VectorXd compute_V_inv_X(Eigen::SparseMatrix<double> result, Eigen::VectorXd b, int n, int max_iteration, double tol);
+   Eigen::VectorXd compute_V_inv_X(const Eigen::SparseMatrix<double>& result,
+                                const Eigen::VectorXd& b,
+                                int n, int max_iteration, double tol);
     
     double logAbsDeterminant(const Eigen::SparseMatrix<double>& V);
 
@@ -760,7 +764,8 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
     bcf_hdr_destroy(hdr);
     bcf_close(vcf);
 }
-    double calculate_stddev(const std::vector<double>& data) {
+ 
+double calculate_stddev(const std::vector<double>& data) {
         double mean = std::accumulate(data.begin(), data.end(), 0.0) / data.size();
         double variance = 0.0;
         for (double val : data) {
@@ -771,7 +776,7 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
     }
 
 
-  vector<double> dispersion_estimate(int times, Eigen::MatrixXd covariate_adjusted_geno, Eigen::VectorXd residuals, Eigen::VectorXd pi, Eigen::SparseMatrix<double> Identity){
+  vector<double> dispersion_estimate_permute(int times, Eigen::MatrixXd covariate_adjusted_geno, Eigen::VectorXd residuals, Eigen::VectorXd pi, Eigen::SparseMatrix<double> Identity){
     const double maf = 0.5;
     random_device rd;
     mt19937 gen(rd());
@@ -813,7 +818,66 @@ void read_in_genotype_trans(const std::string vcf_file, const std::vector<string
     return results;
 }
 
-void compute(string output_path, string site, Eigen::SparseMatrix<double> Identity, int times) {  
+vector<double> dispersion_estimate_sample(
+    Eigen::MatrixXd& covariate_adjusted_geno,
+    Eigen::VectorXd residuals,
+    Eigen::VectorXd& pi,
+    Eigen::SparseMatrix<double>& Identity,
+    Eigen::MatrixXd& user_geno)
+{
+    std::vector<double> results;
+    std::vector<double> ratio;
+
+    const int n_ = pi.size();
+    const int n_marker = user_geno.cols();          
+
+    if (Identity.rows() != n_ || Identity.cols() != user_geno.rows()) {
+        std::cerr << "Dimension mismatch: Identity is " << Identity.rows() << " x " << Identity.cols()
+                  << ", pi has " << n_ << " entries, user_geno has " << user_geno.rows()
+                  << " donors." << std::endl;
+        return results;
+    }
+
+    const Eigen::MatrixXd XtSX = X.transpose() * sigma_inv_X;
+    const Eigen::LDLT<Eigen::MatrixXd> XtSX_ldlt(XtSX);
+
+    const Eigen::VectorXd w = total_.array() * pi.array() * (1.0 - pi.array());
+
+    const int    CG_MAX_ITERATION = 1000;
+    const double CG_TOL = 1e-6;
+    for (int i = 0; i < n_marker; i++) {
+        const Eigen::VectorXd genotype = Identity * user_geno.col(i);
+        const Eigen::VectorXd g = genotype - covariate_adjusted_geno * genotype;
+
+        // G^T W G
+        const double GWG = (g.array().square() * w.array()).sum();
+        if (!(GWG > 0)) continue;                   
+
+        const Eigen::VectorXd sigma_inv_G = compute_V_inv_X(sigma, g, n_, CG_MAX_ITERATION, CG_TOL);
+        const double term1 = g.dot(sigma_inv_G);
+        const Eigen::VectorXd Xt_sigma_inv_G = sigma_inv_X.transpose() * g;
+        const double term2 = Xt_sigma_inv_G.dot(XtSX_ldlt.solve(Xt_sigma_inv_G));
+        const double GPG = term1 - term2;
+
+        ratio.push_back(GPG / GWG);
+    }
+
+    if (ratio.empty()) {
+        std::cerr << "No valid markers for GPG/GWG estimation." << std::endl;
+        return results;
+    }
+    const double mean_ratio = std::accumulate(ratio.begin(), ratio.end(), 0.0) / ratio.size();
+    double ss = 0.0;
+    for (double r : ratio) ss += (r - mean_ratio) * (r - mean_ratio);
+    const double cv = ratio.size() > 1 ? std::sqrt(ss / (ratio.size() - 1)) / mean_ratio : NAN;
+
+    results.push_back(std::sqrt(mean_ratio));       
+    results.push_back(cv);
+    results.push_back(static_cast<double>(ratio.size()));
+    return results;
+}
+
+void compute_permute(string output_path, string site, Eigen::SparseMatrix<double> Identity, int times) {  
     // Write in middle terms for pvalue computation: residuals, pi, total, y, dispersion
     string file = output_path + "/" + site + ".middle";
     ofstream fout(file);
@@ -828,9 +892,8 @@ void compute(string output_path, string site, Eigen::SparseMatrix<double> Identi
     Eigen::VectorXd mu = pi.array() * total_.array();
     Eigen::VectorXd residuals = y_.array() - mu.array();
 
-    cout << "Start variance corrector factor estimation" << endl;
-
-    vector<double> dispersion = dispersion_estimate(times, covariate_adjusted_geno, residuals, pi, Identity);
+    cout << "Start variance corrector factor estimation using permutation" << endl;
+    vector<double> dispersion = dispersion_estimate_permute(times,covariate_adjusted_geno, residuals, pi, Identity);
 
     string status_label = convergence_status_ ? "Converged" : "Fixed";
     fout << status_label << "\t" << site << "\t" << dispersion[0] << "\t" << tau_ << endl;
@@ -862,7 +925,59 @@ void compute(string output_path, string site, Eigen::SparseMatrix<double> Identi
     fout.close();
 }
 
-    void pvalue_beta_sd_compute(string output_file, string site, double dispersion, double threshold, Eigen::VectorXd residuals,Eigen::VectorXd pi,Eigen::VectorXd y,Eigen::VectorXd total){
+void compute_sample(string output_path, string site, Eigen::SparseMatrix<double> Identity, Eigen::MatrixXd user_geno) {  
+    // Write in middle terms for pvalue computation: residuals, pi, total, y, dispersion
+    if(!convergence_status_){
+        cout<<"Retreat to fixed model; can not estimate SAIGE-style GPG/GWG ratio"<<endl;
+        return;
+    }
+    string file = output_path + "/" + site + ".middle";
+    ofstream fout(file);
+
+    Eigen::MatrixXd X_T_W_X = (X.transpose() * W_) * X;
+    cout << "rows for X_T_W_X " << X_T_W_X.rows() << "\t" << X_T_W_X.cols() << endl;
+    Eigen::MatrixXd X_T_W_X_inv = X_T_W_X.inverse();
+    Eigen::MatrixXd X_T_W = X.transpose() * W_;
+    Eigen::MatrixXd covariate_adjusted_geno = X * (X_T_W_X_inv * X_T_W);
+
+    Eigen::VectorXd pi = sigmoid(X * beta_hat + u_hat_);
+    Eigen::VectorXd mu = pi.array() * total_.array();
+    Eigen::VectorXd residuals = y_.array() - mu.array();
+
+    cout << "Start variance corrector factor estimation using GPG/GWG" << endl;
+    vector<double> dispersion = dispersion_estimate_sample(covariate_adjusted_geno, residuals, pi, Identity, user_geno);
+
+    string status_label = "Converged";
+    fout << status_label << "\t" << site << "\t" << dispersion[0] << "\t" << tau_ << endl;
+
+    fout << "residuals" << "\t";
+    for (int i = 0; i < residuals.size(); i++) {
+        fout << residuals[i] << "\t";
+    }
+    fout << endl;
+
+    fout << "pi" << "\t";
+    for (int i = 0; i < pi.size(); i++) {
+        fout << pi[i] << "\t";
+    }
+    fout << endl;
+
+    fout << "total" << "\t";
+    for (int i = 0; i < total_.size(); i++) {
+        fout << total_[i] << "\t";
+    }
+    fout << endl;
+
+    fout << "y" << "\t";
+    for (int i = 0; i < y_.size(); i++) {
+        fout << y_[i] << "\t";
+    }
+    fout << endl;
+
+    fout.close();
+}
+
+void pvalue_beta_sd_compute(string output_file, string site, double dispersion, double threshold, Eigen::VectorXd residuals,Eigen::VectorXd pi,Eigen::VectorXd y,Eigen::VectorXd total,string tau_g){
         if(chr_pos.size()==0){
             cout<<"No genotype here"<<endl;
             return;
@@ -879,28 +994,33 @@ void compute(string output_path, string site, Eigen::SparseMatrix<double> Identi
         Eigen::MatrixXd X_T_W_X_inv = X_T_W_X.inverse();
         Eigen::MatrixXd X_T_W = X.transpose() * W_;
         Eigen::MatrixXd covariate_adjusted_geno = X*(X_T_W_X_inv*X_T_W);
+        double tau_g_tmp = stod(tau_g);
+        double effect, standard_error, p_value, score_vector, info_matrix, test_statistics;
         for(int i=0;i<chr_pos.size();i++){
             const auto &g_vec = g[i];
             Eigen::VectorXd geno = g_vec - covariate_adjusted_geno * g_vec;
             // Compute score vector and info matrix
-            double score_vector = (residuals.array() * geno.array()).sum();
-            double info_matrix = (geno.array().square() * tmp_t_p_1_p.array() ).sum();
+            score_vector = (residuals.array() * geno.array()).sum();
+            info_matrix = (geno.array().square() * tmp_t_p_1_p.array() ).sum();
 
             // Test statistic
-            double test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
-            double p_value = gsl_cdf_chisq_Q(test_statistics*test_statistics,1);
+            test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
+            p_value = gsl_cdf_chisq_Q(test_statistics*test_statistics,1);
 
     // 3. Compute effect size
-            double effect = score_vector/(info_matrix*dispersion*dispersion);
-    // 5. Compute standard error
-            double standard_error = 1 / (std::sqrt(info_matrix) * dispersion);
+            if(tau_g_tmp>1e-6){
+                effect = score_vector/(info_matrix*dispersion*dispersion);
+                standard_error = 1 / (std::sqrt(info_matrix) * dispersion);}
+            if(tau_g_tmp<=1e-6){
+                effect = score_vector/(info_matrix);
+                standard_error = dispersion / (std::sqrt(info_matrix));}
             if(p_value<threshold){
                 fout<<site<<"\t"<<chr_pos[i]<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;}
         }
             fout.close();
     }
 
-    void DS(string output_file, string site, double dispersion, vector<int> group, Eigen::VectorXd residuals,Eigen::VectorXd pi,Eigen::VectorXd y,Eigen::VectorXd total){
+    void DS(string output_file, string site, double dispersion, vector<int> group, Eigen::VectorXd residuals,Eigen::VectorXd pi,Eigen::VectorXd y,Eigen::VectorXd total,string tau_g){
         ofstream fout(output_file);
         Eigen::VectorXd tmp_t_p_1_p = total.array() * pi.array() * (1.0 - pi.array());
         Eigen::VectorXd group_double(group.size());
@@ -924,9 +1044,15 @@ void compute(string output_path, string site, Eigen::SparseMatrix<double> Identi
             // Test statistic
         double test_statistics = score_vector / (std::sqrt(info_matrix)*dispersion);
         double p_value = gsl_cdf_chisq_Q(test_statistics*test_statistics,1);
-        double effect = score_vector/(info_matrix*dispersion*dispersion);
-        double standard_error = 1 / (std::sqrt(info_matrix) * dispersion);
-
+        double effect, standard_error;
+        if(stod(tau_g)<=1e-6){
+            effect = score_vector/(info_matrix);
+            standard_error = dispersion / (std::sqrt(info_matrix));
+        }
+        if(stod(tau_g)>1e-6){
+            effect = score_vector/(info_matrix*dispersion*dispersion);
+            standard_error = 1 / (std::sqrt(info_matrix) * dispersion);
+        }
         fout<<site<<"\t"<<p_value<<"\t"<<effect<<"\t"<<standard_error<<endl;
         fout.close();
     }

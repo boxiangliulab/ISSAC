@@ -40,24 +40,32 @@ using namespace std;
 using Mylist = vector<int>;
 
 int QTL_mapping::parse_options(int argc, char *argv[]) {
-    optind = 1; //Reset before parsing again.
+    optind = 1; // Reset before parsing again.
+    ratio_mode_  = "permute";   // default
+    marker_file_ = "";
     int c;
-    stringstream help_ss;
-    while((c = getopt(argc, argv, "hs:u:p:g:v:n:i:l:t:")) != -1) {
-        switch(c) {
+    while ((c = getopt(argc, argv, "hs:u:p:g:v:n:i:l:t:m:r:")) != -1) {
+        switch (c) {
             case 'h':
                 cout << "Usage: program [options]\n"
-                << "Options:\n"
-                << "  -h          Show this help message and exit\n"
-                << "  -s <file>   Splice phenotype file\n"
-                << "  -u <path>   Output path\n"
-                << "  -p <file>   Principal components (PC) file\n"
-                << "  -g <file>   GRM file\n"
-                << "  -v <file>   GRM relatedness with less than the value will be cleaned to 0\n"
-                << "  -n <int>    Number of GRM samples\n"
-                << "  -i <int>    Number of maximum iteration times for estimating fixed and random effect \n"
-                << "  -l <int>    iteration ending setting (default: 0.001)\n"
-                << "  -t <int>    Times of normalize parameters estimation (*100)\n";
+                     << "Options:\n"
+                     << "  -h            Show this help message and exit\n"
+                     << "  -s <file>     Splice phenotype file\n"
+                     << "  -u <path>     Output path\n"
+                     << "  -p <file>     Principal components (PC) file\n"
+                     << "  -g <file>     GRM file\n"
+                     << "  -v <float>    GRM relatedness below this value will be set to 0\n"
+                     << "  -n <int>      Number of GRM samples\n"
+                     << "  -i <int>      Maximum number of iterations for estimating fixed and random effects\n"
+                     << "  -l <float>    Convergence threshold (default: 0.001)\n"
+                     << "  -t <int>      Times of normalization parameter estimation (*100)\n"
+                     << "  -m <string>   Variance ratio estimation mode (default: permute)\n"
+                     << "                  permute : permute a simulated genotype across donors\n"
+                     << "                  sample  : use real, unpermuted markers supplied with -r;\n"
+                     << "                            recommended for cohorts with substantial relatedness\n"
+                     << "  -r <file>     Marker genotype file (required for -m sample).\n"
+                     << "                  Tab-delimited; first column = donor ID in the same order as the GRM sample;\n"
+                     << "                  remaining columns = genotype dosages (0/1/2), one column per marker.\n";
                 exit(0);
             case 's':
                 splice_file_ = string(optarg);
@@ -86,23 +94,84 @@ int QTL_mapping::parse_options(int argc, char *argv[]) {
             case 't':
                 time_ = stoi(string(optarg));
                 break;
+            case 'm':
+                ratio_mode_ = string(optarg);
+                break;
+            case 'r':
+                marker_file_ = string(optarg);
+                break;
             case '?':
             default:
                 throw runtime_error("Error parsing inputs!(1)\n\n");
         }
     }
-    chr_="NA";
-    vcf_="NA";
+ 
+    if (ratio_mode_ != "permute" && ratio_mode_ != "sample") {
+        throw runtime_error("Invalid -m option: must be 'permute' or 'sample'.\n\n");
+    }
+    if (ratio_mode_ == "sample" && marker_file_.empty()) {
+        throw runtime_error("-m sample requires a marker genotype file supplied with -r.\n\n");
+    }
+    if (ratio_mode_ == "permute" && !marker_file_.empty()) {
+        cerr << "Warning: -r is ignored because -m is 'permute'." << endl;
+    }
+ 
+    chr_ = "NA";
+    vcf_ = "NA";
+ 
     cerr << "Phenotype: " << splice_file_ << endl;
     cerr << "PC: " << PC_ << endl;
     cerr << "GRM: " << GRM_ << endl;
     cerr << "GRM_num: " << GRM_num_ << endl;
-    cerr << "Output file: " << output_file_ << endl;
-    //cerr << "chromosome: " << chr_ << endl;
-    //cerr << "vcf: " << vcf_ << endl;
+    cerr << "Output path: " << output_path_ << endl;
+    cerr << "Variance ratio mode: " << ratio_mode_ << endl;
+    
+    // read in sample file
+    if (ratio_mode_ == "sample") {
+        cerr << "Marker genotype file: " << marker_file_ << endl;
+         ifstream in(marker_file_);
+         if (!in) throw runtime_error("Cannot open marker genotype file: " + marker_file_ + "\n");
+         vector<vector<double>> rows;
+         string line;
+         bool first_line = true;
+         while (getline(in, line)) {
+            if (line.empty()) continue;
+            istringstream ss(line);
+            string id, val;
+            ss >> id;                                   
+            vector<double> row;
+            bool is_header = false;
+            while (ss >> val) {
+            try {
+                row.push_back(val == "NA" ? NAN : stod(val));
+            } catch (const invalid_argument&) {     
+                is_header = true;
+                break;
+            }
+        }
+        if (first_line && is_header) { first_line = false; continue; }
+        first_line = false;
+        rows.push_back(row);
+    }
+ 
+    if (rows.empty()) throw runtime_error("Marker genotype file is empty: " + marker_file_ + "\n");
+ 
+    const int n_donor  = rows.size();
+    const int n_marker = rows[0].size();
+    user_geno_.resize(n_donor, n_marker);
+    for (int i = 0; i < n_donor; i++) {
+        if ((int)rows[i].size() != n_marker)
+            throw runtime_error("Inconsistent number of markers at line " + to_string(i + 1) + "\n");
+        for (int j = 0; j < n_marker; j++) user_geno_(i, j) = rows[i][j];
+    }
+ 
+    cerr << "Loaded " << n_donor << " donors x " << n_marker << " markers." << endl;
+    }
+
     cerr << endl;
     return 0;
 }
+ 
 
 //read in phenotype
 int QTL_mapping::read_in_splice(){
@@ -199,7 +268,7 @@ vector<Eigen::VectorXd> QTL_mapping::read_in_PC(){
 }
 
 
-// Function to generate a random sparse symmetric positive-definite matrix
+
 Eigen::SparseMatrix<double> QTL_mapping::read_in_GRM() {
     int n = stoi(GRM_num_);
     Eigen::SparseMatrix<double> GRM(n,n);
@@ -242,6 +311,8 @@ Eigen::SparseMatrix<double> QTL_mapping::read_in_GRM() {
     return GRM;
 }
 
+
+// prepare metacell-GRM donor matrix
 Eigen::SparseMatrix<double> QTL_mapping::identity_matrix(){
     Eigen::SparseMatrix<double> identity(common_name.size(),GRM_name.size());
     for(int i=0;i<common_name.size();i++){
@@ -312,24 +383,23 @@ void QTL_mapping::obtain_common_name(){
     cout<<"Finish change"<<endl;
 }
 
-Eigen::VectorXd REMLOptimizer::compute_V_inv_X(Eigen::SparseMatrix<double> result, Eigen::VectorXd b, int n, int max_iteration, double tol) {
+Eigen::VectorXd REMLOptimizer::compute_V_inv_X(const Eigen::SparseMatrix<double>& result,
+                                               const Eigen::VectorXd& b,
+                                               int n, int max_iteration, double tol) {
     Eigen::VectorXd x(n);
-    // Set up the Conjugate Gradient solver with a diagonal preconditioner
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> cg;
-    // Compute the decomposition of A
-    cg.compute(result);
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
+                             Eigen::Lower | Eigen::Upper,
+                             Eigen::DiagonalPreconditioner<double>> cg;
     cg.setMaxIterations(max_iteration);
     cg.setTolerance(tol);
-    // Solve the system A * x = b using PCG
-    
+    cg.compute(result);
+
     x = cg.solve(b);
 
     if (cg.info() != Eigen::Success) {
-    std::cerr << "Warning: Conjugate Gradient failed to converge." << std::endl;}
-    // Output the number of iterations and the solution's first 10 elements
-    /*std::cout << "Number of iterations: " << cg.iterations() << std::endl;
-    std::cout << "Estimated error: " << cg.error() << std::endl;
-    std::cout << "First 10 elements of the solution vector x: " << x.head(10).transpose() << std::endl;*/
+        std::cerr << "Warning: Conjugate Gradient failed to converge. iterations="
+                  << cg.iterations() << ", error=" << cg.error() << std::endl;
+    }
     return x;
 }
 
@@ -380,7 +450,6 @@ void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result,Eigen
     //Eigen::VectorXd beta_hat = Eigen::VectorXd::Zero(X_cons.cols());
     cout<<beta_hat<<endl;
     Eigen::VectorXd eta = X_cons * beta_hat;
-    //cout<<eta<<endl;
     // optimize to find the best estimates for tau
     Eigen::MatrixXd mat(3,3);
     mat.setRandom();
@@ -399,7 +468,10 @@ void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result,Eigen
         {chrom, stoi(pos)}
     };
     //tmp.read_in_genotype(vcf_, positions, windowsize, common_name);
-    tmp.compute(output_path_,site,Identity,time_);
+    if(ratio_mode_=="permute"){
+    tmp.compute_permute(output_path_,site,Identity,time_);}
+    if(ratio_mode_=="sample"){
+    tmp.compute_sample(output_path_,site,Identity,user_geno_);}
 }
 
 
@@ -417,11 +489,8 @@ void QTL_mapping::test(){
     obtain_common_name();
     cout<<splice_name.size()<<"\t"<<PC_name.size()<<endl;
     Eigen::SparseMatrix<double> Identity = identity_matrix();
-
+    // extend donor-level GRM to metacell-level GRM
     Eigen::SparseMatrix<double> result = (Identity*(A))*(Identity.transpose());
-    //for(int i=0;i<n;i++){
-    //    result.coeffRef(i,i) = result.coeffRef(i,i) + 0.3;
-    //}
     cout<<"GRM extended"<<endl;
     cout<<result.rows()<<"\t"<<result.cols()<<endl;
     for(int site = 0;site<splice_site_.size();site++){
@@ -460,25 +529,21 @@ Eigen::VectorXd QTL_mapping::IRLS(const Eigen::MatrixXd& X, const Eigen::VectorX
     for (int iter = 0; iter < maxIter; ++iter) {
         // Step 1: Compute eta = X * beta
         eta = X * beta;
-        cout<<eta.head(10).transpose()<<endl;
         // Step 2: Compute mu = logit(eta)
         pi = logit(eta);
         mu = pi.array()*total.array();
         // Step 3: Compute the working dependent variable z
         z = eta.array() + (y.array() - mu.array()) / (total.array()* pi.array() * (1 - pi.array()));
-        cout<<z.size()<<endl;
         // Step 4: Compute weights 
         W = (total.array() * (pi.array()*(1-pi.array()))).matrix();
         W_diag = W.asDiagonal();
 
         // Step 5: Update beta using weighted least squares
 	    XtW = X.transpose() * W_diag;
-	    cout<<XtW.cols()<<"\t"<<XtW.rows()<<endl;
         XtWX = XtW * X;
         XtWX_sparse = XtWX.sparseView();
         XtWy = XtW * z;
         pre_beta = beta;  // Store the full beta vector before updating
-        cout<<XtWy.head(2)<<endl;
     // Set up the Conjugate Gradient solver with a diagonal preconditioner
         Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> cg;
     // Compute the decomposition of A
@@ -694,14 +759,9 @@ int QTL_parse_options(int argc, char *argv[]) {
 
         PCXd.col(i) = test_PC[i];
     }
-
     Eigen::MatrixXd X_cons = it.addConstant(PCXd);
-
-
     string tmp_val;
     double val;
-
-
     // ============================================================
     // Iterate over sites
     // ============================================================
@@ -711,13 +771,11 @@ int QTL_parse_options(int argc, char *argv[]) {
         // --------------------------------------------------------
         // Read middle file
         // --------------------------------------------------------
-
         string middle_file =
             path_ + "/" + sitelist[s] + ".middle";
 
         ifstream fin1;
         fin1.open(middle_file);
-
 
         // File does not exist / cannot be opened
         if (!fin1.is_open()) {
@@ -729,7 +787,6 @@ int QTL_parse_options(int argc, char *argv[]) {
 
             continue;
         }
-
 
         // File exists but is empty
         if (fin1.peek() == ifstream::traits_type::eof()) {
@@ -744,23 +801,16 @@ int QTL_parse_options(int argc, char *argv[]) {
             continue;
         }
 
-
         cout << sitelist[s] << endl;
-
-
         int line_num = 0;
 
         string site_name;
         string dispersion_string;
         string dispersion_post;
-
+        string tau_g;
         double dispersion = 0.0;
-
         vector<Eigen::VectorXd> vectors_val_PC;
-
         bool if_nan = false;
-
-
         // --------------------------------------------------------
         // Parse middle file
         // --------------------------------------------------------
@@ -810,12 +860,9 @@ int QTL_parse_options(int argc, char *argv[]) {
                 dispersion_post =
                     tmp_1.substr(tmp_1.find("\t") + 1);
 
-                dispersion_string =
-                    dispersion_post.substr(
-                        0,
-                        dispersion_post.find("\t")
-                    );
-
+                dispersion_string = dispersion_post.substr(0,dispersion_post.find("\t"));
+                
+                tau_g = dispersion_post.substr(dispersion_post.find("\t")+1);
 
                 if (dispersion_string == "nan"  ||
                     dispersion_string == "-nan" ||
@@ -825,31 +872,23 @@ int QTL_parse_options(int argc, char *argv[]) {
                     if_nan = true;
                     break;
                 }
-
-
                 try {
                     dispersion = stod(dispersion_string);
                 }
                 catch (...) {
-
                     cerr << "Warning: invalid dispersion value: "
                          << dispersion_string
                          << " in "
                          << middle_file
                          << ". Skipping this site."
                          << endl;
-
                     if_nan = true;
                     break;
                 }
-
-
                 cout << dispersion << "\t"
-                     << dispersion_string << endl;
+                     << tau_g << endl;
             }
-
             else {
-
                 Eigen::VectorXd val_PC(0);
 
                 if (line.find('\t') == string::npos) {
@@ -857,16 +896,11 @@ int QTL_parse_options(int argc, char *argv[]) {
                     continue;
                 }
 
-                tmp_line =
-                    line.substr(line.find('\t') + 1);
-
+                tmp_line = line.substr(line.find('\t') + 1);
                 line = tmp_line;
-
-
                 while (line.find('\t') != string::npos) {
 
-                    tmp_val =
-                        line.substr(0, line.find('\t'));
+                    tmp_val = line.substr(0, line.find('\t'));
 
                     val = stod(tmp_val);
 
@@ -885,21 +919,13 @@ int QTL_parse_options(int argc, char *argv[]) {
 
                 vectors_val_PC.push_back(val_PC);
             }
-
-
             line_num++;
         }
-
-
         fin1.close();
-
-
         // Invalid dispersion/header
         if (if_nan) {
             continue;
         }
-
-
         // --------------------------------------------------------
         // IMPORTANT: prevent vectors_val_PC[0-3] out-of-range
         // --------------------------------------------------------
@@ -915,11 +941,7 @@ int QTL_parse_options(int argc, char *argv[]) {
 
             continue;
         }
-
-
         cout << "Finish read in middle file" << endl;
-
-
         // ========================================================
         // Initialize REML optimizer
         // ========================================================
@@ -932,8 +954,8 @@ int QTL_parse_options(int argc, char *argv[]) {
         Eigen::SparseMatrix<double> result(2, 2);
 
         Eigen::MatrixXd mat(3, 3);
-
-
+        
+// Here, tmp is used only to initialize an empty object for QTL mapping, rather than for model construction.
         REMLOptimizer tmp(
             eta,
             X_cons,
@@ -947,7 +969,6 @@ int QTL_parse_options(int argc, char *argv[]) {
             mat,
             0
         );
-
 
         // ========================================================
         // Parse chromosome / position
@@ -1055,7 +1076,8 @@ int QTL_parse_options(int argc, char *argv[]) {
             vectors_val_PC[0],
             vectors_val_PC[1],
             vectors_val_PC[2],
-            vectors_val_PC[3]
+            vectors_val_PC[3],
+            tau_g
         );
     }
 
@@ -1163,7 +1185,7 @@ int DS_parse_options(int argc, char *argv[]) {
         double dispersion;
         vector<Eigen::VectorXd> vectors_val_PC;
         bool if_nan=false;
-        string dispersion_post;
+        string dispersion_post,tau_g;
         while(getline(fin1,line)){
             if(line_num==0){
                 cout<<line<<endl;
@@ -1177,8 +1199,9 @@ int DS_parse_options(int argc, char *argv[]) {
                     if_nan=true;
                     break;
                 }
+                tau_g=dispersion_post.substr(dispersion_post.find("\t")+1);
                 dispersion=stod(dispersion_string);
-                cout<<dispersion<<"\t"<<dispersion_string<<endl;
+                cout<<dispersion<<"\t"<<tau_g<<endl;
             }
             else{
                 Eigen::VectorXd val_PC(0);
@@ -1202,10 +1225,11 @@ int DS_parse_options(int argc, char *argv[]) {
         //random initialize eta,beta_hat,u_hat,mat;
         Eigen::VectorXd eta, beta_hat, u_hat = Eigen::VectorXd::Zero(2);
         Eigen::SparseMatrix<double> result(2,2);
+        // Here, tmp is used only to initialize an empty object for DS analysis, rather than for model construction.
         Eigen::MatrixXd mat(3,3);
         REMLOptimizer tmp(eta, X_cons, beta_hat, u_hat, vectors_val_PC[3], vectors_val_PC[2], result, 10, 1e-3,mat,0);
         string output_file=output_path_+"/"+sitelist[s]+".DS_result";
-        tmp.DS(output_file, site_name, dispersion,group, vectors_val_PC[0],vectors_val_PC[1],vectors_val_PC[2],vectors_val_PC[3]);
+        tmp.DS(output_file, site_name, dispersion,group, vectors_val_PC[0],vectors_val_PC[1],vectors_val_PC[2],vectors_val_PC[3],tau_g);
     }
     return 0;
 }
@@ -1227,7 +1251,7 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
                 << "  -v <file>   VCF file\n"
                 << "  -x <file>   Covariate file (X)\n"
                 << "  -p <path>   Input data path\n"
-                << "  -w <file>    tested variant id\n"
+                << "  -w <file>   tested variant id\n"
                 << "  -m <file>   Common sample file\n"
                 << "  -t <float>  Threshold\n";
                 exit(0);
@@ -1323,10 +1347,9 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
         double dispersion;
         vector<Eigen::VectorXd> vectors_val_PC;
         bool if_nan=false;
-        string dispersion_post;
+        string dispersion_post,tau_g;
         while(getline(fin1,line)){
             if(line_num==0){
-                cout<<line<<endl;
                 tmp_1 = line.substr(line.find("\t")+1);
                 site_name=tmp_1.substr(0,tmp_1.find("\t"));
                 cout<<site_name<<endl;
@@ -1338,7 +1361,8 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
                     break;
                 }
                 dispersion=stod(dispersion_string);
-                cout<<dispersion<<"\t"<<dispersion_string<<endl;
+                tau_g = dispersion_post.substr(dispersion_post.find("\t")+1);
+                cout<<dispersion<<"\t"<<tau_g<<endl;
             }
             else{
                 Eigen::VectorXd val_PC(0);
@@ -1363,10 +1387,11 @@ int trans_QTL_parse_options(int argc, char *argv[]) {
         Eigen::VectorXd eta, beta_hat, u_hat = Eigen::VectorXd::Zero(2);
         Eigen::SparseMatrix<double> result(2,2);
         Eigen::MatrixXd mat(3,3); //X_cons(3,3)
+        // Here, tmp is used only to initialize an empty object for trans-QTL mapping, rather than for model construction.
         REMLOptimizer tmp(eta, X_cons, beta_hat, u_hat, vectors_val_PC[3], vectors_val_PC[2], result, 10, 1e-3,mat,0);
         tmp.read_in_genotype_trans(vcf_, variant_id_, common_sample,chr_);
         string output_file=output_path_+"/"+site_name+".result";
-        tmp.pvalue_beta_sd_compute(output_file, site_name, dispersion,stod(threshold_),vectors_val_PC[0],vectors_val_PC[1],vectors_val_PC[2],vectors_val_PC[3]);  
+        tmp.pvalue_beta_sd_compute(output_file, site_name, dispersion,stod(threshold_),vectors_val_PC[0],vectors_val_PC[1],vectors_val_PC[2],vectors_val_PC[3],tau_g);  
     }
     return 0;
 }
