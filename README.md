@@ -387,14 +387,15 @@ $ISSAC model \
   -r model_construct_QTL_mapping/null_markers.txt
 ```
 
-In this mode, splice sites are handled according to their model-fitting status:
+Because P depends on the estimated variance components, this mode requires a converged mixed model. Splice sites are handled according to their model-fitting status:
 
 | Model-fitting status | Variance correction |
 | -------------------- | ------------------- |
 | Converged, τ<sub>g</sub> > 10<sup>-6</sup> | SAIGE-style G<sup>T</sup>PG / G<sup>T</sup>WG ratio |
-| Not converged or lower boundary | Site excluded |
+| Converged to the lower boundary (τ<sub>g</sub> ≤ 10<sup>-6</sup>) | SAIGE-style G<sup>T</sup>PG / G<sup>T</sup>WG ratio; these sites can be identified by the reported τ<sub>g</sub> and removed by the user if desired |
+| Not converged | Site excluded (no model file is written) |
 
-**Marker genotype file format (`-r`).** Tab-delimited; the first column is the donor ID, and each remaining column is one marker with genotype dosages (0/1/2; missing values as `NA`). **Donors must be in the same order as in the GRM file.** An optional header line is allowed.
+**Marker genotype file format (`-r`).** Tab-delimited; the first column is the donor ID, and each remaining column is one marker with genotype dosages (0/1/2; missing values as `NA`). **Donors must be in the same order as in the GRM file** (donor IDs are not matched by name). An optional header line is allowed.
 
 ```
 donor_id   rs1001   rs1002   rs1003   ...
@@ -403,24 +404,23 @@ D002       1        0        1
 D003       2        1        0
 ```
 
-We recommend using at least 30 common (MAF ≥ 0.05), approximately independent markers located on chromosomes other than the tested splice sites, so that they have no *cis* effect on splicing. 
+We recommend using at least 30 common (MAF ≥ 0.05), approximately independent markers located on chromosomes other than those of the tested splice sites, so that they have no *cis* effect on splicing.
 
 #### Options
 
-| Flag | Description                                                                           |
-| ---- | ------------------------------------------------------------------------------------- |
-| `-s` | Filtered splicing phenotype file                                                      |
-| `-p` | Principal components (PCs) file for covariate correction                              |
-| `-n` | Number of individuals in the GRM file                                                 |
-| `-g` | Genetic relatedness matrix (GRM) file for modeling genetic relatedness                |
-| `-u` | Output directory/prefix for fitted null model files                                   |
-| `-t` | Number of permutations for estimating *r*, in units of 100 (default: 10, i.e., 1,000 permutations); used only in permutation mode or for boundary sites in sample mode |
+| Flag | Description |
+| ---- | ----------- |
+| `-s` | Filtered splicing phenotype file (`.filtered`) |
+| `-p` | Covariate file (genotype PCs, splice PCs and other covariates) |
+| `-n` | Number of individuals in the GRM file |
+| `-g` | Genetic relatedness matrix (GRM) file for modeling genetic relatedness |
+| `-u` | Output directory for fitted null model files |
+| `-t` | Number of permutations for estimating *r*, in units of 100 (default: 10, i.e., 1,000 permutations); used only with `-m permute` |
 | `-v` | GRM sparsification threshold; relatedness values below this threshold are set to zero |
-| `-i` | Maximum number of iterations for estimating fixed and random effects                  |
-| `-l` | Convergence threshold for iterative parameter estimation (default: 0.001)             |
-| `-m` | Variance correction mode: `permute` (default) or `sample`                             |
-| `-r` | Marker genotype file; required when `-m sample` is used                               |
-
+| `-i` | Maximum number of iterations for estimating fixed and random effects |
+| `-l` | Convergence threshold for iterative parameter estimation (default: 0.001) |
+| `-m` | Variance correction mode: `permute` (default) or `sample` |
+| `-r` | Marker genotype file; required when `-m sample` is used |
 
 Collect sites for which null models were successfully built:
 
