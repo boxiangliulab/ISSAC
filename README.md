@@ -381,13 +381,13 @@ $ISSAC IR_combine \
 
 ### 2c. Phenotype Filtering
 
-Removes splice sites with low variability or high sparsity, retaining informative sites for QTL mapping. Apply to both the competitive intron and the IR phenotype files.
+Removes splice sites with high sparsity or low variability, retaining informative sites for QTL mapping. Sparsity is the fraction of metacells with zero total reads at the site; variability is the standard deviation of the usage ratio (included/total reads) across metacells with non-zero coverage. A site is retained only if its sparsity is below `-n` **and** its standard deviation is above `-s`. In the output, metacells with zero coverage at a retained site are filled with the median included and median total read counts of the covered metacells. Apply to both the competitive intron and the IR phenotype files.
 
 **Competitive intron sites:**
 
 ```bash
-s=0.1   # minimum variance threshold
-n=0.5   # maximum sparsity threshold
+s=0.1   # minimum standard deviation of usage ratios
+n=0.5   # maximum fraction of metacells with zero coverage
 
 $ISSAC pheno_output \
   -r splice_phenotype_prepare/phenotype_file/test.site \
@@ -413,8 +413,8 @@ $ISSAC pheno_output \
 | `-r` | Input site phenotype file (`.site`) |
 | `-o` | Filtered output phenotype file (`.filtered`) |
 | `-p` | Output file of per-site usage proportions (`.prop`) |
-| `-s` | Minimum variance threshold; sites below this are excluded |
-| `-n` | Maximum sparsity threshold; sites with a larger fraction of missing values are excluded |
+| `-s` | Standard deviation threshold; sites whose usage-ratio SD is ≤ this value are excluded |
+| `-n` | Sparsity threshold; sites whose fraction of zero-coverage metacells is ≥ this value are excluded |
 
 **Example `.filtered` output** (the header row lists samples; subsequent rows are sites that passed filtering):
 
@@ -701,6 +701,7 @@ $ISSAC trans_QTL \
 | `-w` | File listing variant IDs to test |
 | `-o` | Output prefix |
 | `-t` | P-value output threshold; associations with p > threshold are not written |
+
 
 
 
