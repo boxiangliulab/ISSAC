@@ -1,114 +1,91 @@
-import scanpy as sc
-import pandas as pd
-import numpy as np
-from sklearn.neighbors import NearestNeighbors
-from sklearn.metrics import pairwise_distances
-import matplotlib.pyplot as plt
-import seaborn as sns
-import argparse
-import os
-import networkx as nx
-import anndata
-import community as community_louvain
-from sklearn.metrics import silhouette_score, calinski_harabasz_score
-
 import sys
+import numpy as np
+import pandas as pd
+import scanpy as sc
+import networkx as nx
+import community as community_louvain
+from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics import pairwise_distances, silhouette_score, calinski_harabasz_score
 
-meta_size = int(sys.argv[1])    ##minimum cell numbers per metacell
+# Usage: python metacell_construction.py <meta_size> <cell_type_prefix> <log_normalize|SCTransform> [donor_column] [seed]
+meta_size   = int(sys.argv[1])                                  # minimum number of cells per metacell
+cell_type   = sys.argv[2]                                       # prefix of the h5ad file
+norm_choice = sys.argv[3]                                       # log_normalize or SCTransform
+donor_col   = sys.argv[4] if len(sys.argv) > 4 else "DCP_ID"    # donor/sample ID column in adata.obs
+seed        = int(sys.argv[5]) if len(sys.argv) > 5 else 0      # random seed for Louvain
 
-cell_type=sys.argv[2]     ### Prefix of h5ad file
-norm_choice=sys.argv[3]   ### Sequencing Read depth Normalization choice (log transform or SCTransform)
+if norm_choice == "log_normalize":
+    adata = sc.read_h5ad(cell_type + "_log.h5ad")
+elif norm_choice == "SCTransform":
+    adata = sc.read_h5ad(cell_type + "_SCT.h5ad")
+else:
+    sys.exit("norm_choice must be 'log_normalize' or 'SCTransform'")
 
+if not adata.obs_names.is_unique:
+    sys.exit("Cell barcodes (obs_names) must be unique.")
 
-if norm_choice=="log_normalize":
-   adata = sc.read_h5ad(+cell_type+"_log.h5ad")
+X = pd.DataFrame(adata.obsm["X_pca"], index=adata.obs_names)
+n_pc = X.shape[1]
 
-if norm_choice=="SCTransform":
-   adata = sc.read_h5ad(cell_type+"_SCT.h5ad")
+label_list = []
+donors = sorted(adata.obs[donor_col].unique().tolist())
+performance = pd.DataFrame(np.nan, index=donors, columns=["Silhouette", "CH"])
 
-X = pd.DataFrame(adata.obsm['X_pca'])
-X.index = adata.obs['DCP_ID'].index ##sample name, DCP_ID could be replaced with the sample ID in your h5ad file
-
-adata.obs["meta_cell"] = ""
-meta_info = []
-
-
-whole_label=pd.DataFrame(np.zeros((0,3)))
-whole_label.columns=['meta','cell_id','ind_id']
-
-inter_donor=np.unique(adata.obs['DCP_ID']).tolist()
-
-performance = pd.DataFrame(np.nan, index=inter_donor, columns=['Silhouette','CH'])
-for i in range(len(inter_donor)):
-    sample_id = inter_donor[i]
+for sample_id in donors:
     print(sample_id)
-    num = adata.obs['DCP_ID'][adata.obs['DCP_ID']==sample_id]
-    if len(num)<2*meta_size:
-       newlabel = pd.DataFrame(np.zeros((len(num),3)))
-       newlabel.columns=['meta','cell_id','ind_id']
-       newlabel.loc[:,'meta']="0"
-       newlabel.loc[:,'cell_id']=adata.obs['DCP_ID'].index[adata.obs['DCP_ID']==sample_id]
-       newlabel.loc[:,'ind_id']=sample_id
-       whole_label = pd.concat([whole_label,newlabel])
-       continue
-    print("pass1")
-    pc_matrix = X.loc[num.index]
-    tmp_adata = anndata.AnnData(X=np.array(pc_matrix))
-    nbrs = NearestNeighbors(n_neighbors=meta_size).fit(pc_matrix)
-    _,indices = nbrs.kneighbors(pc_matrix)
-    G=nx.Graph()
+    cells = adata.obs_names[adata.obs[donor_col] == sample_id]
+    n_cells = len(cells)
+
+    # Donors with too few cells: all cells form a single metacell
+    if n_cells < 2 * meta_size:
+        label_list.append(pd.DataFrame({"meta": "0", "cell_id": cells, "ind_id": sample_id}))
+        continue
+
+    pc_matrix = X.loc[cells]
+
+    # kNN graph (first neighbour is the cell itself and is skipped)
+    nbrs = NearestNeighbors(n_neighbors=meta_size).fit(pc_matrix.values)
+    _, indices = nbrs.kneighbors(pc_matrix.values)
+    G = nx.Graph()
+    G.add_nodes_from(range(n_cells))
     for m, neighbors in enumerate(indices):
-      for n in neighbors[1:]:
-        G.add_edge(m, n)
-    partition = community_louvain.best_partition(G)
-    labels = np.array([partition[i] for i in range(len(pc_matrix))])
-    cluster = np.unique(labels)
-    ### collapse clusters with less than meta size to larger clusters
-    for unique_group in cluster:
-       group_num = len(labels[labels==unique_group])
-       if group_num<meta_size:
-          labels[labels==unique_group]=10000
-    newlabel = pd.DataFrame(labels)
-    newlabel.loc[:,'cell_id']=adata.obs['DCP_ID'].index[adata.obs['DCP_ID']==sample_id]
-    unassigned = newlabel.loc[newlabel.iloc[:,0]==10000,'cell_id']
-    newcluster=np.unique(labels)
-    if len(newcluster)==1:
-       newlabel.columns=['meta','cell_id']
-       newlabel.loc[:,'meta']="0"
-       newlabel.loc[:,'ind_id']=sample_id
-       whole_label = pd.concat([whole_label,newlabel])
-       continue
-    print("pass2")
-    pc_centroid = pd.DataFrame(np.zeros(((len(newcluster)-1),50)))
-    pc_centroid.index=newcluster[0:(len(newcluster)-1)]
-    for pc_centroid_index in pc_centroid.index:
-       cell_id_clu = newlabel.loc[newlabel.loc[:,0]==pc_centroid_index,'cell_id']
-       cen_PC = pc_matrix.loc[cell_id_clu,:]
-       pc_centroid.loc[pc_centroid_index,:]=np.mean(cen_PC,axis=0)
-    
-    for cell in unassigned:  
-       pc_cell=np.array(pc_matrix.loc[cell,:]).reshape(1,-1)
-       D = pairwise_distances(pc_cell,pc_centroid,metric='euclidean')
-       min_centroid = pc_centroid.index[D[0]==min(D[0])]
-       newlabel.loc[newlabel.loc[:,'cell_id']==cell,0]=min_centroid
-    newlabel.loc[:,'ind_id']=sample_id
-    newlabel.loc[:,0]=np.array(newlabel.iloc[:,0]).astype(str)
-    newlabel.columns=['meta','cell_id','ind_id']
-    whole_label = pd.concat([whole_label,newlabel])
-    ###compute silhouette_score
-    if len(np.unique(newlabel.loc[:,'meta']))>1:
-     performance.loc[sample_id,'Silhouette'] = silhouette_score(pc_matrix, np.array(newlabel.iloc[:,0]).astype(str), metric='euclidean')
-    ###compute Calinski–Harabasz index
-     performance.loc[sample_id,'CH'] = calinski_harabasz_score(pc_matrix, np.array(newlabel.iloc[:,0]).astype(str))
+        for n in neighbors[1:]:
+            if n != m:
+                G.add_edge(m, int(n))
 
+    partition = community_louvain.best_partition(G, random_state=seed)
+    labels = np.array([partition[k] for k in range(n_cells)])
 
-whole_label.loc[:,'combine_meta']=whole_label['ind_id']+':'+whole_label['meta']
+    # Clusters smaller than meta_size are dissolved and their cells reassigned
+    cluster_ids, cluster_sizes = np.unique(labels, return_counts=True)
+    keep = cluster_ids[cluster_sizes >= meta_size]
 
-len(np.unique(whole_label.loc[:,'combine_meta']))
-       
-len(np.unique(whole_label.loc[:,'ind_id']))
+    if len(keep) <= 1:
+        # No (or only one) cluster large enough: the donor forms a single metacell
+        label_list.append(pd.DataFrame({"meta": "0", "cell_id": cells, "ind_id": sample_id}))
+        continue
 
-whole_label.to_csv(cell_type+norm_choice+str(meta_size)+"_meta.csv",index=False) ##metacell label
+    # Assign cells in dissolved clusters to the nearest retained centroid
+    unassigned = ~np.isin(labels, keep)
+    if unassigned.any():
+        centroids = np.vstack([pc_matrix.values[labels == c].mean(axis=0) for c in keep])
+        D = pairwise_distances(pc_matrix.values[unassigned], centroids, metric="euclidean")
+        labels[unassigned] = keep[np.argmin(D, axis=1)]
 
-performance.to_csv(cell_type+norm_choice+str(meta_size)+"_performance.csv",index=True) ##performance of metacell construction
+    meta = labels.astype(str)
+    label_list.append(pd.DataFrame({"meta": meta, "cell_id": cells, "ind_id": sample_id}))
+
+    # Clustering quality within this donor
+    performance.loc[sample_id, "Silhouette"] = silhouette_score(pc_matrix.values, meta, metric="euclidean")
+    performance.loc[sample_id, "CH"] = calinski_harabasz_score(pc_matrix.values, meta)
+
+whole_label = pd.concat(label_list, ignore_index=True)
+whole_label["combine_meta"] = whole_label["ind_id"].astype(str) + ":" + whole_label["meta"]
+
+print("Number of metacells:", whole_label["combine_meta"].nunique())
+print("Number of donors:", whole_label["ind_id"].nunique())
+
+prefix = cell_type + norm_choice + str(meta_size)
+whole_label.to_csv(prefix + "_meta.csv", index=False)              # metacell labels
+performance.to_csv(prefix + "_performance.csv", index=True)        # metacell construction performance
 
