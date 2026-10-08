@@ -574,7 +574,7 @@ y               2       2       1       2
 ```
 
 Row meanings:
-1. Model-fitting status (`Converged`, or `Fixed` when the mixed model did not converge and ISSAC fell back to a fixed-effects model), site name, variance ratio *r*, and the estimated genetic variance component τ<sub>g</sub> (reported as −1 for `Fixed` sites; values ≤ 10<sup>-6</sup> indicate convergence to the lower boundary);
+1. Model-fitting status (`Converged`, or `Fixed` when the mixed model did not converge and ISSAC fell back to a fixed-effects model), site name, square root of variance ratio *r*, and the estimated genetic variance component τ<sub>g</sub> (reported as −1 for `Fixed` sites; values ≤ 10<sup>-6</sup> indicate convergence to the lower boundary);
 2. per-sample null residuals;
 3. per-sample null π estimates;
 4. total CB–UMI counts per sample;
