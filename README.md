@@ -633,8 +633,6 @@ chr6:-:100847625        chr6:100352246:G:A      0.451096        -0.00176255     
 
 Columns: (1) splice site, (2) SNP (chrom:pos:ref:alt), (3) p-value, (4) effect size (β, on the logit scale), (5) standard error of the effect size.
 
-> For sites whose null model converged to the lower boundary (τ<sub>g</sub> ≤ 10<sup>-6</sup>) or fell back to a fixed-effects model, the p-value is still calibrated by *r*, but the effect size is computed without the variance ratio and should be interpreted with caution. These sites can be identified from the first row of the corresponding null model file.
-
 ---
 
 ## Differential Splicing
