@@ -437,7 +437,7 @@ chr10:-:16816972  0.846154 1.000000 0.777778 0.888889 1.000000
 
 ## Step 3: Model Construction & cis-sQTL Mapping
 
-For each splice site, ISSAC fits a binomial GLMM with two random effects: a donor-level genetic random effect, whose covariance is given by the metacell-level genetic relationship matrix (GRM; this accounts for the correlation among metacells from the same donor and for relatedness between donors), and an observation-level random effect that captures overdispersion. Population structure and other confounders are adjusted for through covariates (e.g., genotype PCs and splicing PCs). cis-sQTL mapping is then performed with a score test within a defined window.
+For each splice site, ISSAC fits a binomial GLMM whose random-effect covariance comprises a metacell-level genetic relationship matrix, accounting for within-donor correlation among metacells and between-donor relatedness, and an observation-level term capturing overdispersion. Population structure and other confounders are adjusted for through covariates (e.g., genotype PCs and splicing PCs). cis-sQTL mapping is then performed with a score test within a defined window.
 
 ### GRM Preparation
 
