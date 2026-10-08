@@ -534,7 +534,7 @@ total           2       2       1       2
 y               2       2       1       2
 ```
 
-Row meanings: (1) convergence status (Converged or Fixed) site name, variance correction parameter, variance component of random effect; (2) per-sample null residuals; (3) per-sample null π estimates; (4) total CB-UMI counts per sample; (5) CB-UMI counts supporting site usage per sample. Sample order matches the PC and phenotype files.
+Row meanings: (1) convergence status (Converged or Fixed) site name, variance correction parameter, variance component of metacell-level genetic relationship matrix; (2) per-sample null residuals; (3) per-sample null π estimates; (4) total CB-UMI counts per sample; (5) CB-UMI counts supporting site usage per sample. Sample order matches the PC and phenotype files.
 
 Collect sites for which null models were successfully built:
 
