@@ -459,7 +459,8 @@ void QTL_mapping::Bino_GLMM(string site,Eigen::SparseMatrix<double> result,Eigen
     try {
         tmp.update(splice_numXd,total_numXd);
     } catch (std::exception &e) {
-           std::cerr << "Update failed: " << e.what() << std::endl;
+        std::cerr << "Update failed: " << e.what() << std::endl;
+        return;
     }
     string chrom = site.substr(0,site.find(":"));
     string tmp_pos = site.substr(site.find(":")+1);

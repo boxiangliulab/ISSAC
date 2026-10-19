@@ -192,22 +192,9 @@ int USRExtractor::parse_alignment_into_unspliced_read(
     int read_pos = aln->core.pos;
     string chr(header->target_name[chr_id]);
 
-    // Require chromosome names beginning with "chr"
-    if (chr.rfind("chr", 0) != 0) return 0;
-
-    // Restrict to autosomes chr1-chr22
-    string chr_suffix = chr.substr(3);
-
-    try {
-        int chr_num = stoi(chr_suffix);
-
-        // Ensure the entire suffix is numeric
-        if (chr_suffix != to_string(chr_num)) return 0;
-
-        if (chr_num < 1 || chr_num > 22) return 0;
-    } catch (const std::exception&) {
-        return 0;
-    }
+    // Skip reads on chromosomes without any user-specified sites
+    if (site_chroms_.find(chr) == site_chroms_.end()) return 0;
+    
 
     j1.chrom = chr;
     j1.start = read_pos;
@@ -309,101 +296,112 @@ int USRExtractor::identify_USR_from_BAM() {
     // ============================================================
     // 2. Read splice-site list
     // ============================================================
-    ifstream fin1(sites_file_);
+   ifstream fin1(sites_file_);
 
-    if (!fin1.is_open()) {
-        cerr << "Failed to open the site file: "
-             << sites_file_ << endl;
-        return 1;
+if (!fin1.is_open()) {
+    cerr << "Failed to open the site file: "
+         << sites_file_ << endl;
+    return 1;
+}
+
+// Reset containers in case this function is called more than once
+sitelist.clear();
+site_chroms_.clear();
+start_pos.clear();
+
+string chrom;
+string strand;
+string pos;
+string chrom_strand;
+int n_sites = 0;
+
+while (getline(fin1, line)) {
+
+    // Remove trailing carriage return (Windows line endings)
+    if (!line.empty() && line.back() == '\r') {
+        line.pop_back();
     }
 
-    string chrom;
-    string strand;
-    string pos;
-    string chrom_strand;
-
-    while (getline(fin1, line)) {
-
-        if (line.empty()) {
-            continue;
-        }
-
-        // Expected format:
-        // chr:strand:position[:...]
-        //
-        // Example:
-        // chr1:+:123456
-
-        size_t p1 = line.find(':');
-
-        if (p1 == string::npos) {
-            cerr << "Invalid site entry: " << line << endl;
-            continue;
-        }
-
-        size_t p2 = line.find(':', p1 + 1);
-
-        if (p2 == string::npos) {
-            cerr << "Invalid site entry: " << line << endl;
-            continue;
-        }
-
-        size_t p3 = line.find(':', p2 + 1);
-
-        chrom = line.substr(0, p1);
-        strand = line.substr(p1 + 1, p2 - p1 - 1);
-
-        if (p3 == string::npos) {
-            pos = line.substr(p2 + 1);
-        } else {
-            pos = line.substr(p2 + 1, p3 - p2 - 1);
-        }
-
-        // Only accept valid strands
-        if (strand != "+" && strand != "-") {
-            cerr << "Invalid strand in site entry: "
-                 << line << endl;
-            continue;
-        }
-
-        int pos_int;
-
-        try {
-            pos_int = stoi(pos);
-        }
-        catch (const std::exception&) {
-            cerr << "Invalid genomic position in site entry: "
-                 << line << endl;
-            continue;
-        }
-
-        chrom_strand = chrom + ":" + strand;
-
-        sitelist[chrom_strand].push_back(pos_int);
+    if (line.empty()) {
+        continue;
     }
 
-    fin1.close();
+    // Expected format:
+    // chr:strand:position[:...]
+    //
+    // Example:
+    // chr1:+:123456
 
+    size_t p1 = line.find(':');
 
-    // ============================================================
-    // 3. Sort site lists once after all sites have been loaded
-    // ============================================================
-    for (auto &entry : sitelist) {
-        sort(entry.second.begin(), entry.second.end());
+    if (p1 == string::npos) {
+        cerr << "Invalid site entry: " << line << endl;
+        continue;
     }
 
+    size_t p2 = line.find(':', p1 + 1);
 
-    // ============================================================
-    // 4. Initialize site-search positions
-    // ============================================================
-    for (int i = 1; i <= 22; ++i) {
-
-        chrom_strand = "chr" + to_string(i) + ":+";
-        start_pos[chrom_strand] = 0;
-
-        chrom_strand = "chr" + to_string(i) + ":-";
-        start_pos[chrom_strand] = 0;
+    if (p2 == string::npos) {
+        cerr << "Invalid site entry: " << line << endl;
+        continue;
     }
+
+    size_t p3 = line.find(':', p2 + 1);
+
+    chrom = line.substr(0, p1);
+    strand = line.substr(p1 + 1, p2 - p1 - 1);
+
+    if (p3 == string::npos) {
+        pos = line.substr(p2 + 1);
+    } else {
+        pos = line.substr(p2 + 1, p3 - p2 - 1);
+    }
+
+    // Only accept valid strands
+    if (strand != "+" && strand != "-") {
+        cerr << "Invalid strand in site entry: "
+             << line << endl;
+        continue;
+    }
+
+    int pos_int;
+
+    try {
+        pos_int = stoi(pos);
+    }
+    catch (const std::exception&) {
+        cerr << "Invalid genomic position in site entry: "
+             << line << endl;
+        continue;
+    }
+
+    chrom_strand = chrom + ":" + strand;
+
+    sitelist[chrom_strand].push_back(pos_int);
+    site_chroms_.insert(chrom);            // record chromosomes present in the site list
+    n_sites++;
+}
+
+fin1.close();
+
+if (n_sites == 0) {
+    cerr << "No valid sites found in the site file: " << sites_file_ << endl;
+    return 1;
+}
+
+// ============================================================
+// 3-4. Sort site lists, remove duplicates and initialize search positions
+//    based on the chrom:strand combinations present in the site file
+// ============================================================
+for (auto &entry : sitelist) {
+    auto &v = entry.second;
+    sort(v.begin(), v.end());
+    v.erase(unique(v.begin(), v.end()), v.end());
+    start_pos[entry.first] = 0;
+}
+
+    cerr << n_sites << " sites read from " << site_chroms_.size()
+     << " chromosomes" << endl;
 
 
     // ============================================================

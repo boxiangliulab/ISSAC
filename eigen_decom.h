@@ -348,6 +348,8 @@ void update(Eigen::VectorXd& y, Eigen::VectorXd& total){
 
     //only binomial fixed model
     if(convergence_status_==false){
+        if (start_beta.isZero(0)) {
+        throw std::runtime_error("IRLS and mixed model both failed to converge; null model not fitted");}
         u_hat   = Eigen::VectorXd::Zero(n);
         tau_ = 0.0;     
         tau_o_ = 0.0;
@@ -778,8 +780,8 @@ double calculate_stddev(const std::vector<double>& data) {
 
   vector<double> dispersion_estimate_permute(int times, Eigen::MatrixXd covariate_adjusted_geno, Eigen::VectorXd residuals, Eigen::VectorXd pi, Eigen::SparseMatrix<double> Identity){
     const double maf = 0.5;
-    random_device rd;
-    mt19937 gen(rd());
+    //fix random seed
+    mt19937 gen(12345);
     binomial_distribution<> geno_dist(2, maf);
     double score_vector, info_matrix;
     Eigen::VectorXd genotype, g;
@@ -791,7 +793,6 @@ double calculate_stddev(const std::vector<double>& data) {
 
     for(int i = 0; i < times; i++){
         for(int j = 0; j < 100; j++){
-            static thread_local std::mt19937 gen(std::random_device{}());
             std::shuffle(orig.data(), orig.data() + orig.size(), gen);
             g = orig;
             genotype = Identity * g;

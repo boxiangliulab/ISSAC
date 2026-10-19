@@ -84,6 +84,7 @@ class USRExtractor {
         map<string,vector<int>> sitelist;
         map<string,int> start_pos;
         unordered_set<string> barcodeset;
+        unordered_set<std::string> site_chroms_;
     public:
         //Default constructor
         USRExtractor() {
