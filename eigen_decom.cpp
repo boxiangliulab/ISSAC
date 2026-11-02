@@ -554,13 +554,16 @@ Eigen::VectorXd QTL_mapping::IRLS(const Eigen::MatrixXd& X, const Eigen::VectorX
     // Solve the system A * x = b using PCG
     
         beta = cg.solve(XtWy);  // Solve for new beta
+        if(!beta.allFinite()) { beta.setZero(); break; }
         cout<<"beta\t"<<beta.head(2).transpose()<<endl;
         // Step 6: Check for convergence across the full beta vector
         double delta = (beta - pre_beta).norm() / (pre_beta.norm() + 1e-10);
         if (delta < tol) {
             break;  // Convergence reached
         }
-        //beta = Eigen::VectorXd::Zero(p); // if not converged
+        if(iter==maxIter-1){
+            beta = Eigen::VectorXd::Zero(p); // if not converged
+        }
     }
     if(beta.array().isNaN().any()){beta = Eigen::VectorXd::Zero(p);}
     return beta;
