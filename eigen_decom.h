@@ -321,7 +321,7 @@ void update(Eigen::VectorXd& y, Eigen::VectorXd& total){
         //cout << "u_hat_o: " << u_hat_o.head(10).transpose() << endl;
         //cout << pre_tau_g << "\t" << tau_g << "\t" << pre_tau_o << "\t" << tau_o << endl;
 
-        double beta_delta = (beta_hat - pre_beta).norm() / (pre_beta.norm() + 1e-10);
+        double beta_delta = (beta_hat - pre_beta).norm();
         bool tau_converged = (std::abs(pre_tau_g - tau_g) < tol_) && (std::abs(pre_tau_o - tau_o) < tol_);
         bool beta_converged = beta_delta < tol_;
 

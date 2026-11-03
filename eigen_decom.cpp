@@ -557,7 +557,7 @@ Eigen::VectorXd QTL_mapping::IRLS(const Eigen::MatrixXd& X, const Eigen::VectorX
         if(!beta.allFinite()) { beta.setZero(); break; }
         cout<<"beta\t"<<beta.head(2).transpose()<<endl;
         // Step 6: Check for convergence across the full beta vector
-        double delta = (beta - pre_beta).norm() / (pre_beta.norm() + 1e-10);
+        double delta = (beta - pre_beta).norm();
         if (delta < tol) {
             break;  // Convergence reached
         }
